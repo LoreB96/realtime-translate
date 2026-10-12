@@ -8,6 +8,6 @@ type Paths<T, P extends string = ''> = {
     : Paths<T[K], `${P}${K & string}.`>;
 }[keyof T];
 
-export type Locale = 'pt-BR' | 'en-US';
+export type Locale = 'pt-BR' | 'en-US' | 'it-IT';
 export type TranslationKey = Paths<typeof ptBR>;
 export type TranslationDict = typeof ptBR;

@@ -31,10 +31,10 @@ export function Step4Devices({ mode }: { mode?: 'edit' | undefined }): JSX.Eleme
   const allFilled = Boolean(selectedMic && selectedToMeet && selectedFromMeet && selectedHeadset);
 
   const back = (): void => {
-    navigate(mode === 'edit' ? { kind: 'review' } : { kind: 'wizard', step: 3 });
+    navigate(mode === 'edit' ? { kind: 'settings', section: 'audio' } : { kind: 'wizard', step: 3 });
   };
   const proceed = (): void => {
-    navigate(mode === 'edit' ? { kind: 'review' } : { kind: 'wizard', step: 5 });
+    navigate(mode === 'edit' ? { kind: 'settings', section: 'audio' } : { kind: 'wizard', step: 5 });
   };
 
   const placeholder = t('setup.devices.selectPlaceholder');
@@ -154,7 +154,7 @@ export function Step4Devices({ mode }: { mode?: 'edit' | undefined }): JSX.Eleme
   );
 }
 
-function DeviceField({
+export function DeviceField({
   label, hint, value, onChange, options, placeholder, recommendedId, recommendedLabel,
 }: {
   label: string;

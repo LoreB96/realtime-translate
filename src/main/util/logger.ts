@@ -33,7 +33,27 @@ export interface Logger {
   error(event: string, data?: Record<string, unknown>): void;
 }
 
-const REDACTED_FIELDS = new Set(['audio', 'audio_delta', 'transcript', 'transcript_delta', 'delta']);
+// Content keys are dropped wherever they appear. The M6 assistant keys (transcript, typed,
+// prompt and suggestion text, LLM request/response bodies) are listed after 'delta'.
+// `message` stays unredacted: new code never puts content in it.
+const REDACTED_FIELDS = new Set([
+  'audio',
+  'audio_delta',
+  'transcript',
+  'transcript_delta',
+  'delta',
+  'text',
+  'original',
+  'translated',
+  'content',
+  'messages',
+  'prompt',
+  'instructions',
+  'suggestions',
+  'items',
+  'choices',
+  'input',
+]);
 const MAX_DEPTH = 8;
 
 function sanitize(value: unknown, depth: number, seen: WeakSet<object>): unknown {

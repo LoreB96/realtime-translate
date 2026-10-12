@@ -184,12 +184,12 @@ export function Step6TestTranslation({ mode }: { mode?: 'edit' | undefined }): J
   };
 
   const back = (): void => {
-    navigate(mode === 'edit' ? { kind: 'review' } : { kind: 'wizard', step: 5 });
+    navigate(mode === 'edit' ? { kind: 'settings', section: 'audio' } : { kind: 'wizard', step: 5 });
   };
 
   const concluir = async (): Promise<void> => {
     if (mode === 'edit') {
-      navigate({ kind: 'review' });
+      navigate({ kind: 'settings', section: 'audio' });
       return;
     }
     await rt.markSetupComplete();
@@ -200,7 +200,10 @@ export function Step6TestTranslation({ mode }: { mode?: 'edit' | undefined }): J
 
   return (
     <>
-      <div className="setup-step-meta">{t('setup.stepLabel', { n: 6, total: 6 })} — {t('setup.test.label')}</div>
+      {/* In Settings the section header replaces the wizard's step counter. */}
+      {mode !== 'edit' && (
+        <div className="setup-step-meta">{t('setup.stepLabel', { n: 6, total: 6 })} — {t('setup.test.label')}</div>
+      )}
       <h1 className="setup-heading">{t('setup.test.heading')}</h1>
       <p className="setup-sub">{t('setup.test.sub')}</p>
 

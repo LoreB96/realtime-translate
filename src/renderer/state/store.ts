@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { DeviceInventory, Direction, SessionState } from '../../shared/types';
+import type { DeviceInventory, Direction, HealthReport, SessionState } from '../../shared/types';
 import type { LanguageCode } from '../../shared/languages';
 
 interface UpdateState {
@@ -30,6 +30,9 @@ interface AppState {
   // `ready` fires once the update has been downloaded and is installable.
   update: UpdateState;
 
+  // Audio health pushed by main (device problems, silent mic/call, current audio mode).
+  health: HealthReport;
+
   setHasApiKey(value: boolean): void;
   setApiKeyHint(value: string | undefined): void;
   setDevices(value: DeviceInventory): void;
@@ -44,6 +47,7 @@ interface AppState {
   setLatency(direction: Direction, averageMs: number): void;
   setUpdateAvailable(info: { version: string }): void;
   setUpdateReady(info: { version: string }): void;
+  setHealth(report: HealthReport): void;
   hydrate(): Promise<void>;
 }
 
@@ -73,6 +77,7 @@ export const useStore = create<AppState>((set) => ({
   latencyMs: { A: undefined, B: undefined },
   hydrated: false,
   update: { available: null, ready: null },
+  health: { mode: 'off', issues: [] },
   setHasApiKey: (hasApiKey) => set({ hasApiKey }),
   setApiKeyHint: (apiKeyHint) => set({ apiKeyHint }),
   setDevices: (devices) => set({ devices }),
@@ -115,16 +120,22 @@ export const useStore = create<AppState>((set) => ({
     set((s) => ({ ...s, update: { ...s.update, available: info } })),
   setUpdateReady: (info) =>
     set((s) => ({ ...s, update: { ...s.update, ready: info } })),
+  setHealth: (health) => set({ health }),
   hydrate: async () => {
     const prefs = await window.rt.loadPrefs();
+    // Older builds offered Chromium's 'default'/'communications' pseudo-devices, which
+    // follow the Windows default and can silently re-route (or loop) a direction. Treat
+    // a saved one as unset so Start sends the user back to device selection.
+    const real = (id: string | undefined): string | undefined =>
+      id === 'default' || id === 'communications' ? undefined : id;
     set((s) => ({
       ...s,
       sourceLang: prefs.languages?.source ?? s.sourceLang,
       targetLang: prefs.languages?.target ?? s.targetLang,
-      selectedMic: prefs.devices?.mic ?? s.selectedMic,
-      selectedToMeet: prefs.devices?.toMeet ?? s.selectedToMeet,
-      selectedFromMeet: prefs.devices?.fromMeet ?? s.selectedFromMeet,
-      selectedHeadset: prefs.devices?.headset ?? s.selectedHeadset,
+      selectedMic: real(prefs.devices?.mic) ?? s.selectedMic,
+      selectedToMeet: real(prefs.devices?.toMeet) ?? s.selectedToMeet,
+      selectedFromMeet: real(prefs.devices?.fromMeet) ?? s.selectedFromMeet,
+      selectedHeadset: real(prefs.devices?.headset) ?? s.selectedHeadset,
       meetConfirmed: prefs.meetConfirmed ?? s.meetConfirmed,
       hydrated: true,
     }));

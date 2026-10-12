@@ -1,15 +1,17 @@
 import ptBR from './locales/pt-BR.json';
 import enUS from './locales/en-US.json';
+import itIT from './locales/it-IT.json';
 import type { Locale, TranslationDict, TranslationKey } from './types';
 
 export type { Locale, TranslationDict, TranslationKey };
-export { ptBR, enUS };
+export { ptBR, enUS, itIT };
 
-export const SUPPORTED_LOCALES: readonly Locale[] = ['pt-BR', 'en-US'];
+export const SUPPORTED_LOCALES: readonly Locale[] = ['pt-BR', 'en-US', 'it-IT'];
 
 const DICTIONARIES: Record<Locale, TranslationDict> = {
   'pt-BR': ptBR,
   'en-US': enUS,
+  'it-IT': itIT,
 };
 
 /** Walk a dot-notation path through the dict; return the key itself on miss
@@ -42,10 +44,22 @@ export function createT(dict: TranslationDict): T {
   return (key, vars) => substitute(lookup(dict, key as string), vars);
 }
 
-/** Pick the first locale in `candidates` that's supported; fall back to en-US. */
+/**
+ * Pick the first supported locale in `candidates`; fall back to en-US.
+ * Exact matches win over language-prefix matches across the whole list, so
+ * ['en-GB', 'pt-BR'] resolves to pt-BR (exact) rather than en-US (prefix of en-GB).
+ * Prefix matching maps OS locales like 'it', 'it-CH', 'pt-PT', 'en-GB' to the
+ * supported variant of the same language.
+ */
 export function resolveLocaleFromCandidates(candidates: readonly string[]): Locale {
   for (const c of candidates) {
     if ((SUPPORTED_LOCALES as readonly string[]).includes(c)) return c as Locale;
+  }
+  for (const c of candidates) {
+    const lang = c.split(/[-_]/)[0]?.toLowerCase();
+    if (!lang) continue;
+    const match = SUPPORTED_LOCALES.find((l) => l.split('-')[0] === lang);
+    if (match) return match;
   }
   return 'en-US';
 }

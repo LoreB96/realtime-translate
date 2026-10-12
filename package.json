@@ -1,6 +1,6 @@
 {
   "name": "realtime-translate",
-  "version": "0.5.0-m5",
+  "version": "0.6.0",
   "description": "Realtime translation app for Google Meet powered by OpenAI gpt-realtime-translate",
   "author": {
     "name": "Carlos Victor Rodrigues",

@@ -9,25 +9,83 @@
     "yes": "Yes, I heard it",
     "no": "I didn't hear anything",
     "skip": "Skip",
-    "quit": "Quit app"
+    "quit": "Quit app",
+    "copy": "Copy",
+    "copied": "Copied ✓"
   },
   "bar": {
     "tooltip": {
       "play": "Start translation",
       "pause": "Pause translation",
       "retry": "Try again",
-      "settings": "Settings"
+      "settings": "Settings",
+      "quit": "Quit",
+      "transcribeOff": "Transcript off: click to transcribe the call when you are not translating",
+      "transcribeOn": "Transcript on (OpenAI): click to turn it off",
+      "transcribeIncluded": "While translating, the transcript is already included at no extra cost",
+      "transcribeNoKey": "Transcribing needs an OpenAI API key",
+      "suggestOff": "Reply suggestions off: click to turn them on",
+      "suggestOn": "Reply suggestions on: click to turn them off",
+      "transcript": "Open the transcript (read, type to speak, suggestions)",
+      "costs": "Services and costs"
     },
     "status": {
       "connecting": "Connecting…",
       "reconnecting": "Reconnecting",
       "attempt": "attempt {{n}}",
       "errorPrefix": "Error:"
+    },
+    "health": {
+      "direct": "Direct audio",
+      "directTooltip": "Direct mode: you hear the call and the call hears you, without translation. Press ▶ to start translating.",
+      "clickForHelp": "Click to open Troubleshooting."
     }
   },
   "menu": {
     "settings": "Settings",
-    "quit": "Quit"
+    "troubleshoot": "Troubleshooting",
+    "quit": "Quit",
+    "transcript": "Live transcript"
+  },
+  "health": {
+    "short": {
+      "device-missing": {
+        "mic": "Mic disconnected",
+        "toCall": "CABLE-A missing",
+        "fromCall": "CABLE-B missing",
+        "headset": "Headset disconnected"
+      },
+      "device-failed": {
+        "mic": "Mic not working",
+        "toCall": "CABLE-A error",
+        "fromCall": "CABLE-B error",
+        "headset": "Headset error"
+      },
+      "mic-silent": "Mic may be muted",
+      "call-silent": "No call audio",
+      "audio-suspended": "Audio paused",
+      "mic-quiet": "Mic too quiet",
+      "call-quiet": "Call audio too quiet"
+    },
+    "fix": {
+      "device-missing": {
+        "mic": "Your microphone is no longer connected. Plug it back in (or reconnect the Bluetooth headset): the app reconnects by itself. If you now use a different mic, select it in Settings → Devices.",
+        "toCall": "CABLE-A Input (the virtual cable that carries your voice to the call) has disappeared. Reinstall or re-enable VB-CABLE A+B, restart the PC, then press Re-detect in Settings → VB-CABLE A · B.",
+        "fromCall": "CABLE-B Output (the virtual cable that brings the call into the app) has disappeared. Reinstall or re-enable VB-CABLE A+B, restart the PC, then press Re-detect in Settings → VB-CABLE A · B.",
+        "headset": "Your headset or speakers are no longer connected. Plug them back in: the app reconnects by itself. If you now use a different device, select it in Settings → Devices."
+      },
+      "device-failed": {
+        "mic": "The app can't open your microphone. Close other apps that may be holding it and check Windows Settings → Privacy & security → Microphone (allow desktop apps). The app retries by itself; if it doesn't recover, unplug and replug the mic, or stop and restart the translation if it is running.",
+        "toCall": "The app can't play into CABLE-A Input. In Windows Sound settings check that the cable is enabled. The app retries by itself; if it doesn't recover, stop and restart the translation (if it is running) or restart the PC.",
+        "fromCall": "The app can't record from CABLE-B Output. In Windows Sound settings → Recording check that it is enabled and not used exclusively by another app. The app retries by itself; if it doesn't recover, stop and restart the translation (if it is running) or restart the PC.",
+        "headset": "The app can't play on your headset. Check that it is on and connected (unplug and replug it), or select it again in Settings → Devices. The app retries by itself; if it doesn't recover, stop and restart the translation if it is running."
+      },
+      "mic-silent": "Your microphone has sent only complete silence since the translation started: it may be muted. Unmute it (headset mute button, keyboard mic key, or Windows Settings → Sound → Input volume) and check that the right mic is selected in Settings → Devices. If you just haven't spoken yet, ignore this: it disappears as soon as you talk.",
+      "call-silent": "Nothing has arrived from the call app since the translation started. In the audio settings of Meet, Teams or Zoom set Speakers to \"{{speaker}}\". Also check that the meeting tab isn't muted. If the other person simply hasn't spoken yet, this disappears as soon as they do.",
+      "audio-suspended": "Windows paused the app's audio (often after sleep or a device change). The app tries to resume it by itself; if it doesn't, stop and restart the translation (if it is running), or quit and reopen the app.",
+      "mic-quiet": "Your voice reaches the app, but too quietly to be translated. Raise the microphone input volume in Windows Settings → Sound → Input (70–100%), move closer to the mic, and check that the right mic is selected in Settings → Devices.",
+      "call-quiet": "The call's audio reaches the app, but too quietly to be translated. Set the call app's volume to 100% (and Chrome/Edge or the call app in the Windows Volume mixer), and set the level of CABLE-B Input to 100% in Windows Sound settings → Playback → Properties → Levels."
+    }
   },
   "setup": {
     "stepLabel": "Step {{n}} of {{total}}",
@@ -37,7 +95,7 @@
     "welcome": {
       "label": "Welcome",
       "heading": "Let's get you set up in ~5 minutes",
-      "sub": "Realtime Translate translates your Google Meet calls in real time. Here's how it works:",
+      "sub": "Realtime Translate translates your calls (Google Meet, Microsoft Teams, Zoom) in real time. Here's how it works:",
       "diagramDirA": "You speak in Portuguese, your contact hears English",
       "diagramDirB": "Your contact speaks English, you hear Portuguese",
       "you": "You",
@@ -65,7 +123,7 @@
       "label": "Virtual cables",
       "detecting": "Detecting…",
       "detectedHeading": "VB-CABLE A+B detected ✓",
-      "detectedSub": "Ready to route audio between you and Meet.",
+      "detectedSub": "Ready to route audio between you and your call app.",
       "missingHeading": "You need to install VB-CABLE A+B",
       "missingSub": "It's a pair of virtual audio cables. Third-party software (donationware), safe and widely used.",
       "downloadButton": "Download VB-CABLE A+B",
@@ -83,10 +141,10 @@
       "sub": "Select which mic and headset you use.",
       "mic": "Microphone (your voice)",
       "micHint": "Your physical microphone — where your voice is captured before translating.",
-      "toMeet": "Output to Meet",
-      "toMeetHint": "Where the app sends translated audio. Should be CABLE-A (recommended below).",
-      "fromMeet": "Capture from Meet",
-      "fromMeetHint": "Where the app captures the contact's voice (coming from Meet). Should be CABLE-B (recommended below).",
+      "toMeet": "Output to call",
+      "toMeetHint": "Where the app sends translated audio; your call app picks it up as its microphone. Should be CABLE-A (recommended below).",
+      "fromMeet": "Capture from call",
+      "fromMeetHint": "Where the app captures the contact's voice (coming from the call app). Should be CABLE-B (recommended below).",
       "headset": "Headset (you hear the translation)",
       "headsetHint": "Where you hear the contact's translation. Use a separate headset if possible — avoids feedback with the microphone.",
       "languagesLabel": "Languages (you ↔ contact)",
@@ -96,15 +154,19 @@
       "useRecommended": "Use recommended"
     },
     "meet": {
-      "label": "Configure Meet",
-      "heading": "Configure Google Meet",
-      "sub": "This step is manual — we can't verify it automatically, but it's quick.",
+      "label": "Configure call app",
+      "heading": "Configure your call app",
+      "sub": "This step is manual — we can't verify it automatically, but it's quick. The pictures show Google Meet; Teams and Zoom use the same two settings.",
       "alreadyConfigured": "I've configured it",
       "step1": "Open any meeting in Meet",
       "step2": "Click the 3 dots in the bottom-right corner → Settings",
       "step3": "Go to the 'Audio' tab",
-      "step4": "Microphone: select 'CABLE-A Output (VB-Audio Cable A)'",
-      "step5": "Speakers: select 'CABLE-B Input (VB-Audio Cable B)' (NOT the '16ch' one)"
+      "step4": "Microphone: select '{{mic}}'",
+      "step5": "Speakers: select '{{speaker}}' (NOT the '16ch' one)",
+      "devicesHeading": "Exact names to select in the call app",
+      "noiseWarning": "Turn OFF noise cancellation in the call app (in Meet: Settings → Audio → Noise cancellation and Adaptive audio). It treats the translated voice as noise and cuts it.",
+      "otherApps": "Using Microsoft Teams or Zoom? Use the same mapping: Microphone = CABLE-A Output, Speakers = CABLE-B Input.",
+      "otherAppsButton": "Guides for Teams, Zoom and Windows"
     },
     "test": {
       "label": "Test translation",
@@ -125,7 +187,7 @@
       "cableANotDetected": "CABLE-A recording side not detected",
       "noAudioOnCableA": "No audio detected on CABLE-A Output",
       "openaiNoAudio": "OpenAI didn't return translated audio. Check your key/quota and the source language.",
-      "noLoopbackDespiteAudio": "Audio was routed but didn't loop back through CABLE-A. Confirm 'Output to Meet' is set to CABLE-A Input.",
+      "noLoopbackDespiteAudio": "Audio was routed but didn't loop back through CABLE-A. Confirm 'Output to call' is set to CABLE-A Input.",
       "confirmHeardPt": "Did you hear a phrase in Portuguese in your headphones?",
       "userNoAudio": "Audio not confirmed by user"
     }
@@ -142,12 +204,18 @@
       "cablesMissing": "Not detected — install and re-detect",
       "languages": "Languages",
       "devices": "Devices",
-      "devicesValue": "Mic: {{mic}} · Output to Meet: {{toMeet}} · Capture from Meet: {{fromMeet}} · Headset: {{headset}}",
-      "meet": "Configure Google Meet",
-      "meetValue": "Mic = CABLE-A Output · Speaker = CABLE-B Input · we can't verify this automatically",
+      "devicesValue": "Mic: {{mic}} · Output to call: {{toMeet}} · Capture from call: {{fromMeet}} · Headset: {{headset}}",
+      "meet": "Configure call app",
+      "meetValue": "Mic = CABLE-A Output · Speaker = CABLE-B Input · we can't verify this automatically — run the audio check",
       "edit": "Edit",
       "rescan": "Re-detect",
-      "viewGuide": "View guide"
+      "viewGuide": "View guide",
+      "troubleshoot": "Troubleshooting & audio check",
+      "troubleshootOk": "Audio check and step-by-step guides for Meet, Teams, Zoom and Windows",
+      "troubleshootIssues": "Problems detected: {{n}} — open to see how to fix them",
+      "open": "Open",
+      "assistant": "Assistant: transcript, AI, voice",
+      "assistantValue": "Transcription: {{stt}} · AI: {{llm}}"
     },
     "footer": {
       "test": "Test translation",
@@ -155,10 +223,387 @@
       "close": "Close"
     }
   },
+  "trouble": {
+    "heading": "Troubleshooting",
+    "sub": "If something doesn't work, start here: run the audio check, read the problems detected right now and follow the guide for your call app.",
+    "back": "← Back",
+    "check": {
+      "heading": "Audio check",
+      "intro": "Checks every device and both virtual cables in a few seconds. The translation must be stopped. Note: a short, quiet test tone is sent into the call through CABLE-A and another one plays in your headset — if you are in a meeting, mute yourself in the call app first.",
+      "during": "During the check: speak into your mic, and in the call app press 'Test speakers' (or let the other person talk).",
+      "run": "Run audio check",
+      "again": "Run again",
+      "running": "Checking… keep talking",
+      "busy": "Stop the translation first (■ button on the bar), then run the check again.",
+      "failed": "The check could not run: {{message}}. Close this window, reopen Troubleshooting and try again.",
+      "allPass": "Everything works. If the other person still can't hear you, check the call app settings in the guides below.",
+      "finishedAt": "Last check: {{time}}",
+      "level": "Level: {{db}} dB",
+      "skippedHint": "Not run: an earlier check failed or a setting is missing.",
+      "status": {
+        "pass": "OK",
+        "warn": "Check",
+        "fail": "Problem",
+        "skipped": "Skipped"
+      }
+    },
+    "diag": {
+      "api-key": {
+        "title": "OpenAI key saved",
+        "fix": "No OpenAI key is saved. Open Settings → OpenAI API Key and paste your key (it starts with sk-)."
+      },
+      "devices-saved": {
+        "title": "Devices selected",
+        "fix": "Not all four devices are selected. Open Settings → Devices and choose microphone, output to call, capture from call and headset."
+      },
+      "mic-present": {
+        "title": "Microphone connected",
+        "fix": "The selected microphone isn't connected. Plug it in, or choose another one in Settings → Devices."
+      },
+      "mic-signal": {
+        "title": "Your voice reaches the app",
+        "fix": "Your mic is silent or too quiet for the translation. Speak during the check, unmute the mic, raise the input volume in Windows Settings → Sound → Input (70–100%), and make sure the right mic is selected in Settings → Devices."
+      },
+      "to-call-present": {
+        "title": "CABLE-A Input present",
+        "fix": "CABLE-A Input is missing. Install VB-CABLE A+B, restart the PC, then choose CABLE-A Input as 'Output to call' in Settings → Devices."
+      },
+      "cable-a-loopback": {
+        "title": "CABLE-A carries your voice to the call",
+        "fix": "A test sound played into CABLE-A Input didn't come out of CABLE-A Output. In Windows Sound settings → Recording, enable CABLE-A Output and make sure it isn't muted; set all CABLE devices to 48000 Hz; restart the PC if needed."
+      },
+      "from-call-present": {
+        "title": "CABLE-B Output present",
+        "fix": "CABLE-B Output is missing. Install VB-CABLE A+B, restart the PC, then choose CABLE-B Output as 'Capture from call' in Settings → Devices."
+      },
+      "call-signal": {
+        "title": "Sound from the call app arrives",
+        "fix": "No sound, or too little, arrived from the call app. In the call app set Speakers to \"{{speaker}}\" and its volume to 100%; in the Windows Volume mixer set Chrome/Edge (or the call app) to 100%, and in Windows Sound settings → Playback set the level of CABLE-B Input to 100%. Then run the check again and press 'Test speakers' (or let the other person talk) while it runs."
+      },
+      "headset-present": {
+        "title": "Headset connected",
+        "fix": "The selected headset isn't connected. Plug it in or turn it on, or choose another one in Settings → Devices."
+      },
+      "headset-tone": {
+        "title": "Test tone on your headset",
+        "fix": "The test tone couldn't be played on your headset. Check it is on and connected, raise the volume, and select it again in Settings → Devices."
+      }
+    },
+    "live": {
+      "heading": "Problems right now",
+      "none": "No problems detected right now.",
+      "since": "since {{time}}",
+      "mode": {
+        "off": "Audio is off at the moment (the settings window is open or the app is starting).",
+        "passthrough": "Direct mode: the call passes through untranslated. Press ▶ on the bar to translate.",
+        "translating": "Translation is running."
+      }
+    },
+    "guides": {
+      "heading": "Step-by-step guides",
+      "devicesIntro": "These are the exact names to select in your call app:",
+      "micLabel": "Microphone",
+      "speakerLabel": "Speakers",
+      "meet": {
+        "title": "Google Meet (Chrome / Edge)",
+        "step1": "In the meeting, click ⋮ (More options) → Settings → Audio.",
+        "step2": "Microphone: select \"{{mic}}\".",
+        "step3": "Speakers: select \"{{speaker}}\" (not the one with \"16ch\").",
+        "step4": "Turn OFF \"Noise cancellation\" and \"Adaptive audio\": they treat the translated voice as noise and cut it.",
+        "step5": "Make sure the Meet tab isn't muted (right-click the tab) and that the site may use the microphone (lock icon in the address bar → Microphone: Allow).",
+        "step6": "Check these settings again after every browser restart: Chrome and Edge may go back to \"Default\" on their own."
+      },
+      "teams": {
+        "title": "Microsoft Teams",
+        "step1": "Open Settings (… next to your profile picture) → Devices → Audio devices and choose \"Custom setup\".",
+        "step2": "Speaker: \"{{speaker}}\".",
+        "step3": "Microphone: \"{{mic}}\".",
+        "step4": "Noise suppression: Off (or Low).",
+        "step5": "During a meeting, check under … → Settings → Device settings that the same devices are still selected."
+      },
+      "zoom": {
+        "title": "Zoom",
+        "step1": "Open Zoom → Settings (gear icon) → Audio.",
+        "step2": "Speaker: \"{{speaker}}\".",
+        "step3": "Microphone: \"{{mic}}\".",
+        "step4": "Uncheck \"Automatically adjust microphone volume\".",
+        "step5": "Background noise suppression: Low or Off — or enable \"Original sound for musicians\" and turn it on in the meeting."
+      },
+      "windows": {
+        "title": "Windows sound settings",
+        "step1": "Never set a CABLE device as the Windows default or default communication device: your real mic and headset must stay the defaults.",
+        "step2": "Sound control panel → Communications tab → choose \"Do nothing\", so Windows doesn't lower the volume during calls.",
+        "step3": "All CABLE devices (Playback and Recording tabs) must use the same format: Properties → Advanced → 48000 Hz.",
+        "step4": "In the same Advanced tab, uncheck \"Allow applications to take exclusive control of this device\" for every CABLE device.",
+        "step5": "Bluetooth headsets: prefer a wired or USB headset. With Bluetooth, select the \"Hands-Free\" devices for both mic and headset.",
+        "step6": "If the audio crackles or stutters: open the VB-CABLE control panel and raise \"Max Latency\"."
+      }
+    },
+    "faq": {
+      "heading": "Frequently asked questions",
+      "phantom": {
+        "q": "I hear phrases like \"I'm ready, let's talk\" that nobody said",
+        "a": "The translator received only silence and made up a sentence. The call app isn't sending audio to CABLE-B: set its Speakers to \"{{speaker}}\" and run the audio check."
+      },
+      "notHeard": {
+        "q": "Nobody hears me (or they hear me cut off)",
+        "a": "The call app's microphone isn't \"{{mic}}\", or its noise cancellation is removing the translated voice. Fix the microphone in the call app and turn noise cancellation off."
+      },
+      "echo": {
+        "q": "The other person hears an echo",
+        "a": "The sound from your speakers goes back into your mic. Use headphones instead of speakers and keep the volume moderate."
+      },
+      "direct": {
+        "q": "Before I press play, I hear the call untranslated",
+        "a": "That's direct mode, and it's intended: while translation is off the app passes your voice and the call through unchanged, so you're never left without audio. Press ▶ on the bar to translate. If nobody has talked on either side for 10 minutes, the app releases your microphone (Bluetooth headsets go back to full quality) and reopens it as soon as sound arrives from the call."
+      }
+    }
+  },
   "update": {
     "available": "Downloading v{{version}}…",
     "ready": "Restart to update v{{version}}",
     "tooltipAvailable": "Update v{{version}} downloading in background",
     "tooltipReady": "Click to restart and apply the update"
+  },
+  "transcript": {
+    "title": "Live transcript",
+    "status": {
+      "translating": "Translating — transcript from the translation",
+      "sttOpenai": "Direct audio — transcribing with OpenAI",
+      "off": "Transcription is off while not translating",
+      "error": "Transcription problem — check Assistant settings",
+      "retry": "Retry"
+    },
+    "cta": {
+      "title": "Turn on transcription to see the call when you're not translating.",
+      "openai": "Transcribe with OpenAI",
+      "hint": "About $0.003 per minute of speech; silence is not sent."
+    },
+    "speaker": {
+      "me": "Me",
+      "them": "Them"
+    },
+    "empty": "Nothing yet. What is said in the call will appear here.",
+    "jumpToLatest": "Jump to latest",
+    "pin": "Keep on top",
+    "unpin": "Stop keeping on top",
+    "menu": {
+      "more": "More",
+      "clear": "Clear transcript",
+      "clearConfirm": "Clear",
+      "exportTxt": "Export as text",
+      "exportMd": "Export as Markdown",
+      "settings": "Assistant settings"
+    },
+    "confirmClear": "Clear the whole transcript? This cannot be undone.",
+    "typed": "Typed",
+    "speak": {
+      "queued": "Waiting…",
+      "translating": "Translating…",
+      "synthesizing": "Preparing voice…",
+      "speaking": "Speaking…",
+      "done": "Spoken",
+      "error": "Couldn't speak this",
+      "cancelled": "Stopped",
+      "retry": "Retry"
+    },
+    "composer": {
+      "placeholder": "Type what you want to say…",
+      "send": "Speak",
+      "stop": "Stop",
+      "translate": "Translate to {{lang}} before speaking",
+      "charCount": "{{n}}/{{max}}",
+      "noKey": "Typed speech needs an OpenAI API key.",
+      "noDevice": "Choose the “Output to call” device in Settings first.",
+      "setupBusy": "Close the setup screens to speak into the call."
+    },
+    "suggestions": {
+      "title": "Suggested replies",
+      "suggest": "Suggest",
+      "loading": "Thinking…",
+      "empty": "No suggestions right now.",
+      "needsStt": "Turn on transcription so suggestions can follow the call when you're not translating.",
+      "speak": "Speak",
+      "edit": "Edit",
+      "hide": "Hide",
+      "show": "Show"
+    },
+    "export": {
+      "header": "Transcript — {{date}}"
+    }
+  },
+  "assistant": {
+    "heading": "Assistant",
+    "sub": "Live transcript, typed speech and reply suggestions.",
+    "stt": {
+      "title": "Live transcript",
+      "engine": "Transcription when not translating",
+      "off": "Off",
+      "openai": "OpenAI (cloud)",
+      "openaiModel": "OpenAI model",
+      "costOpenai": "Billed per minute of speech; silence is not sent.",
+      "inputTranscript": "Also transcribe the original speech while translating",
+      "inputTranscriptHint": "May add about $0.017 per minute for each direction. Applies from the next Start.",
+      "theirSpeech": "Translate what the other person says when not translating",
+      "theirSpeechHint": "Uses the AI model below, one short request per sentence.",
+      "openOnLaunch": "Open the transcript window when the app starts",
+      "openNow": "Open transcript",
+      "retry": "Retry",
+      "state": {
+        "off": "Off",
+        "listening": "Listening",
+        "error": "Error"
+      }
+    },
+    "llm": {
+      "title": "AI model",
+      "preset": "Provider",
+      "openai": "OpenAI",
+      "ollama": "Ollama",
+      "lmstudio": "LM Studio",
+      "custom": "Custom",
+      "baseUrl": "Server address (base URL)",
+      "model": "Model",
+      "loadModels": "Load models",
+      "modelsEmpty": "The server returned no models.",
+      "modelsFailed": "Couldn't load the model list.",
+      "reasoning": "Reasoning effort",
+      "reasoningDefault": "Server default",
+      "reasoningHint": "Leave on “Server default” if your model doesn't support it.",
+      "apiKey": "API key (optional)",
+      "apiKeyHint": "Stored encrypted on this PC. Your OpenAI key is never sent to other servers.",
+      "apiKeySaved": "Saved key ●●●●{{last4}}",
+      "apiKeySave": "Save key",
+      "apiKeyClear": "Remove key",
+      "openaiKeyUsed": "Uses your OpenAI API key.",
+      "test": "Test connection",
+      "testOk": "Connected — {{ms}} ms",
+      "hintOllama": "Is Ollama running? Start it, then run “ollama pull {{model}}”.",
+      "cost": "OpenAI: about $0.001–0.004 per suggestion. Local models are free.",
+      "insecureWarn": "This address isn't encrypted: transcripts would travel over the network in clear text."
+    },
+    "tts": {
+      "title": "Voice for typed messages",
+      "voice": "Voice",
+      "monitor": "Also play it on my headset",
+      "monitorWarn": "Only with headphones — on speakers the microphone picks it up and the call hears it twice.",
+      "cost": "Uses OpenAI text-to-speech: a short message costs a fraction of a cent."
+    },
+    "suggest": {
+      "title": "Reply suggestions",
+      "enabled": "Show reply suggestions",
+      "auto": "Suggest automatically after the other person speaks",
+      "hint": "Uses the AI model above. The recent transcript is sent to it."
+    },
+    "errors": {
+      "no-openai-key": "This needs an OpenAI API key.",
+      "llm-unreachable": "Can't reach the AI server. If you use Ollama or LM Studio, make sure it is running.",
+      "llm-auth": "The AI server rejected the API key.",
+      "llm-model-missing": "Model not found on the AI server. Choose or download a model.",
+      "llm-timeout": "The AI server took too long to answer.",
+      "llm-bad-response": "The AI answer couldn't be read.",
+      "llm-truncated": "The AI answer was cut off. Try a lower reasoning effort.",
+      "tts-failed": "Couldn't generate the voice.",
+      "tts-no-device": "No “Output to call” device is configured.",
+      "tts-busy-setup": "The setup screens are using the audio devices. Close them and try again.",
+      "stt-failed": "Transcription service error.",
+      "input-transcript-unsupported": "The translation service didn't accept original-speech transcription. Translation continues normally.",
+      "rate-limited": "Too many requests — wait a moment and retry.",
+      "unknown": "Something went wrong."
+    }
+  },
+  "panel": {
+    "title": "Services and costs",
+    "since": "since {{time}}",
+    "reset": "Reset",
+    "resetTitle": "Reset the spend counter",
+    "total": "Estimated spend",
+    "totalHint": "Estimated from OpenAI prices: the exact amount is in your OpenAI dashboard.",
+    "estimated": "estimate",
+    "settings": "Settings",
+    "close": "Close",
+    "free": "Free",
+    "perHour": "~{{usd}}/hour",
+    "upToPerHour": "max {{usd}}/hour",
+    "perMin": "~{{usd}} per spoken minute",
+    "minutes": "{{n}} min",
+    "calls": "{{n}} requests",
+    "noKey": "Needs an OpenAI key",
+    "localModel": "local model",
+    "translate": {
+      "name": "Translation",
+      "desc": "Live translation of both sides of the call",
+      "start": "Start",
+      "stop": "Stop"
+    },
+    "transcribe": {
+      "name": "Transcript",
+      "desc": "Call text when you are not translating (included while translating)"
+    },
+    "suggest": {
+      "name": "Reply suggestions",
+      "desc": "The AI suggests what to answer",
+      "auto": "Automatic"
+    },
+    "voice": {
+      "name": "Text → voice",
+      "desc": "Type a message and the app says it in the call",
+      "open": "Type"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "close": "Close",
+    "wizard": "Run the guided setup again",
+    "group": {
+      "call": "Call",
+      "assistant": "Assistant",
+      "help": "Help"
+    },
+    "nav": {
+      "general": "General",
+      "audio": "Audio and devices",
+      "test": "Test translation",
+      "transcription": "Transcript",
+      "ai": "AI model",
+      "voice": "Voice",
+      "suggestions": "Suggestions",
+      "troubleshoot": "Audio problems"
+    },
+    "sub": {
+      "general": "Call languages and OpenAI key.",
+      "audio": "Virtual cables, devices and call app setup.",
+      "test": "Check that both directions work.",
+      "transcription": "Live text of the call.",
+      "ai": "The model that translates typed messages and suggests replies.",
+      "voice": "The (male) voices of the live translation and of typed messages.",
+      "suggestions": "Replies the AI suggests while you talk.",
+      "troubleshoot": "Automatic audio check and step-by-step guides."
+    },
+    "general": {
+      "languages": "Languages",
+      "you": "You speak",
+      "them": "The other person speaks",
+      "languagesHint": "Your voice is translated into their language and theirs into yours.",
+      "key": "OpenAI API key",
+      "keySaved": "Saved: ●●●●{{last4}}",
+      "keyMissing": "No key saved",
+      "keyReplace": "Replace",
+      "keyHint": "Used for translation, transcript and voice (and for the AI if you use the OpenAI model)."
+    },
+    "audio": {
+      "liveNote": "While this section is open the call audio is paused: it resumes with the chosen devices as soon as you switch to another section.",
+      "cables": "VB-CABLE A · B",
+      "devices": "Devices",
+      "callApp": "Call app (Meet, Teams, Zoom)",
+      "showGuide": "Show the guide",
+      "hideGuide": "Hide the guide"
+    },
+    "voice": {
+      "translate": "Live translation voice",
+      "translateHint": "The voice that speaks the translation, in both directions. Applies from the next Start.",
+      "typed": "Voice for typed messages and suggestions",
+      "recommended": "recommended"
+    }
   }
 }

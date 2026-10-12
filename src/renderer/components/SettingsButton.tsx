@@ -12,3 +12,14 @@ export function SettingsButton({ onClick }: { onClick: () => void }): JSX.Elemen
     </button>
   );
 }
+
+export function QuitButton({ onClick }: { onClick: () => void }): JSX.Element {
+  const t = useT();
+  return (
+    <button className="rt-gear rt-quit" onClick={onClick} title={t('bar.tooltip.quit')} aria-label={t('bar.tooltip.quit')}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M18 6 6 18M6 6l12 12" />
+      </svg>
+    </button>
+  );
+}

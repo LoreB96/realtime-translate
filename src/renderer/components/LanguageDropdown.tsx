@@ -5,6 +5,7 @@ import { SUPPORTED_LOCALES, type Locale } from '../../shared/i18n';
 const LABELS: Record<Locale, { flag: string; name: string }> = {
   'pt-BR': { flag: '🇧🇷', name: 'Português' },
   'en-US': { flag: '🇺🇸', name: 'English' },
+  'it-IT': { flag: '🇮🇹', name: 'Italiano' },
 };
 
 export function LanguageDropdown({

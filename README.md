@@ -38,7 +38,7 @@ flowchart LR
 
 Windows will show a blue **"Windows protected your PC"** warning because the installer isn't code-signed yet. Click **"More info"** → **"Run anyway"**. It's safe — the full source code is in this repo and the installer is built by [GitHub Actions](.github/workflows/release.yml) from a public commit.
 
-After install, open the app and a **5-minute setup wizard** walks you through everything: OpenAI key → virtual cables → audio devices → Google Meet config → quick translation test. Auto-update is built in — new versions download in the background and prompt you to restart.
+After install, open the app and a **5-minute setup wizard** walks you through everything: OpenAI key → virtual cables → audio devices → Google Meet config → quick translation test. Auto-update is opt-in (set `REALTIME_TRANSLATE_AUTO_UPDATE=1`) so a locally built or modified install is never overwritten; the portable exe never auto-updates.
 
 > 👨‍💻 **Developer?** Skip to [Quick start (developers)](#quick-start-developers) or [Architecture](#architecture).
 
@@ -52,6 +52,7 @@ After install, open the app and a **5-minute setup wizard** walks you through ev
 - [Quick start (developers)](#quick-start-developers)
 - [Setup wizard walkthrough](#setup-wizard-walkthrough)
 - [Daily use](#daily-use)
+- [Assistant (transcript, typed speech, suggestions)](#assistant-transcript-typed-speech-suggestions)
 - [Architecture](#architecture)
 - [Audio routing in detail](#audio-routing-in-detail)
 - [Privacy & security](#privacy--security)
@@ -204,7 +205,7 @@ Download the latest installer from the [GitHub Releases page](https://github.com
 
 > ⚠ Windows will show a "publisher unknown" warning on first launch (SmartScreen). The installer is unsigned in v0.5.0; click "More info → Run anyway". Code-signing is on the roadmap for M6+.
 
-After install, the wizard takes ~5 minutes to set up your OpenAI key + VB-CABLE. Auto-update is enabled — newer versions install in the background and prompt you to restart when ready.
+After install, the wizard takes ~5 minutes to set up your OpenAI key + VB-CABLE. Auto-update is off by default; set the environment variable `REALTIME_TRANSLATE_AUTO_UPDATE=1` to opt in (installer build only — the portable exe never auto-updates).
 
 ---
 
@@ -273,9 +274,38 @@ After setup, the only UI is a small floating bar pinned to a corner of your scre
 | ▶ / ⏸ / ↻ | Start / Stop / Retry button (state-aware) |
 | ⚙ | Open the Review screen |
 
-Right-click the bar for the system menu (Settings / Quit).
+Right-click the bar for the system menu (Live transcript / Settings / Troubleshooting / Quit).
 
 The bar stays pinned across sessions — its position is remembered in your prefs file.
+
+---
+
+## Assistant (transcript, typed speech, suggestions)
+
+Optional helpers that live in a separate **Live transcript** window (right-click the bar → **Live transcript**). Configure them in **Settings → Assistant: transcript, AI, voice** (route `#/assistant`), also reachable from the transcript window's menu. Opening these settings does not cut the call audio. Everything is off or opt-in where it costs money.
+
+- **Live transcript.** While translating, both sides appear automatically from the translation itself. When you are not translating (direct audio), turn on transcription with one click (**Transcribe with OpenAI**, model `gpt-4o-mini-transcribe` by default). Optional: also transcribe your original speech while translating, and translate what the other person says while in direct mode. Transcripts stay in memory; **Export** (.txt / .md) is the only thing written to disk.
+- **Typed speech.** Type a sentence in your language: it is translated and spoken into the call (CABLE-A) with OpenAI TTS (`gpt-4o-mini-tts`), in both modes. Messages are spoken in the order you sent them; Stop cancels them all.
+- **Reply suggestions.** After the other person speaks (faster after a question), an AI model proposes up to 3 short replies in both languages. Click one to edit it, or **Speak** to say it into the call.
+- **AI model.** Any OpenAI-compatible server: OpenAI (`gpt-5-mini`, uses your OpenAI key), Ollama, LM Studio or a custom URL. Your OpenAI key is only ever sent to `https://api.openai.com`; other servers use an optional separate key, stored encrypted.
+
+**Ollama quick start** (free, runs on your PC):
+
+```bash
+ollama pull qwen3:8b
+```
+
+Then in Settings → Assistant choose **Ollama**, base URL `http://127.0.0.1:11434/v1`, model `qwen3:8b`, and press **Test connection** (the first test can take a while as the model loads). Typed speech still needs an OpenAI key for the voice (TTS), and transcription in direct mode uses OpenAI (local Whisper is planned for M7).
+
+**Assistant costs** (on your OpenAI bill, on top of translation):
+
+| Feature | Cost |
+|---|---|
+| Transcript while translating | Comes with the translation. The optional original-speech transcript may add about $0.017/min per direction (unverified) |
+| Transcription in direct mode | `gpt-4o-mini-transcribe` $0.003/min of speech (silence is not sent); `gpt-4o-transcribe` $0.006/min; `gpt-live-transcribe` $0.017/min |
+| Their-speech translation | One small AI request per sentence (OpenAI: fractions of a cent; local: free) |
+| Typed speech (TTS) | `gpt-4o-mini-tts`: $0.60 / 1M text tokens + $12 / 1M audio tokens |
+| Suggestions | `gpt-5-mini`: about $0.001–0.004 per suggestion request; local models free |
 
 ---
 
@@ -341,7 +371,7 @@ The renderers never talk to each other directly — all coordination goes throug
 | WebSocket | [`ws`](https://github.com/websockets/ws) (main-process WebSocket client) |
 | Tests | [Vitest](https://vitest.dev/) + [Playwright](https://playwright.dev/) (E2E spike) |
 | Lint | [ESLint](https://eslint.org/) + [`@typescript-eslint`](https://typescript-eslint.io/) |
-| i18n | Hand-rolled (template-literal-typed key lookup over JSON; ~150 keys × 2 locales) |
+| i18n | Hand-rolled (template-literal-typed key lookup over JSON; ~300 keys × 3 locales: pt-BR, en-US, it-IT; OS locale matched by language prefix) |
 
 ---
 
@@ -437,8 +467,8 @@ flowchart LR
 - **Bring your own OpenAI key.** The app does not relay through any first-party server; your audio goes directly from your machine to OpenAI's WebSocket endpoint over TLS. No telemetry, no analytics, no remote logging.
 - **Key storage.** Your OpenAI key is encrypted at rest using Electron's `safeStorage` API (Windows DPAPI under the hood). The encrypted blob lives at `%APPDATA%\realtime-translate\apikey.bin` — outside the project, outside the repo, machine-bound. Re-encrypted with your Windows credentials.
 - **Local-only state.** Preferences, language pair, device selection, and UI locale all live in `%APPDATA%\realtime-translate\prefs.json`. Plain JSON; nothing sensitive in it.
-- **No conversation logs.** The app does not record, store, or upload your conversations. Audio chunks are streamed to OpenAI in real time and are not persisted on disk.
-- **No automatic updates.** Updates ship via Git pull (developers) until M5 lands a signed installer with code-signing.
+- **No conversation logs.** The app does not record, store, or upload your conversations. Audio chunks are streamed to OpenAI in real time and are not persisted on disk. Assistant transcripts, typed messages and suggestions stay in memory, never reach the log files, and are written to disk only when you press Export.
+- **No automatic updates by default.** The packaged app only checks GitHub Releases when `REALTIME_TRANSLATE_AUTO_UPDATE=1` is set (installer build only), because unsigned updates install silently on quit and would replace a locally built or modified install.
 
 ---
 
@@ -468,7 +498,7 @@ src/
     offscreen/          # Web Audio bridge (background renderer)
     styles/             # tokens.css, widget.css, setup.css
   shared/               # Code shared across processes
-    i18n/               # I18nProvider, locales (pt-BR, en-US)
+    i18n/               # I18nProvider, locales (pt-BR, en-US, it-IT)
     types.ts            # SessionState, DeviceInventory, ...
     languages.ts        # 72-language list
     events.ts           # IPC channel constants
@@ -548,6 +578,62 @@ This is **the user's OpenAI bill**, not the app's. The app does not collect any 
 | Translation choppy / gaps | Network instability or CPU saturation | Check connection; close heavy apps |
 | Meet doesn't see CABLE-A as a mic option | Meet was opened before VB-CABLE finished loading | Refresh the Meet tab |
 
+### In-app help: health chip + Troubleshooting screen
+
+The app watches its own audio and tells you what is wrong and how to fix it:
+
+- **Health chip on the bar**: amber (warning) or red (error) with a short label, e.g. *No audio from call*, *Mic muted*, *Headset disconnected*, *CABLE-A missing*, *Audio paused*. Hover for the full fix, click to open Troubleshooting.
+- **"Direct audio" label**: shown while idle in direct (passthrough) mode. You hear the call and the call hears you, untranslated; press ▶ to translate. This is intended.
+- **Troubleshooting screen**: right-click the bar → *Troubleshooting*, or Settings → *Troubleshooting & audio check*. It contains:
+  - **Audio check**: verifies the key, the four devices, your mic level, the CABLE-A loopback, sound arriving from the call on CABLE-B, and a test tone on your headset. During the check, speak into your mic and press *Test speakers* in the call app (or let the other person talk). Stop the translation first. Every warning/failure comes with a concrete fix.
+  - **Problems right now**: the live issues with their fixes.
+  - The guides and FAQ below.
+
+The call app must always use these two devices (the screen shows the exact names found on your PC, with a Copy button):
+
+| Call app setting | Device |
+|---|---|
+| Microphone | `CABLE-A Output (VB-Audio Cable A)` |
+| Speakers | `CABLE-B Input (VB-Audio Cable B)` (not the "16ch" one) |
+
+#### Google Meet (Chrome / Edge)
+
+1. In the meeting: ⋮ (More options) → Settings → Audio.
+2. Microphone = `CABLE-A Output (VB-Audio Cable A)`.
+3. Speakers = `CABLE-B Input (VB-Audio Cable B)`, not the 16ch one.
+4. Turn **off** *Noise cancellation* and *Adaptive audio* (they treat the translated voice as noise and cut it).
+5. The Meet tab must not be muted (right-click the tab) and the site must be allowed to use the microphone (lock icon → Microphone: Allow).
+6. Re-check after every browser restart: Chrome/Edge may silently fall back to *Default*.
+
+#### Microsoft Teams
+
+1. Settings (… next to your profile picture) → Devices → Audio devices → *Custom setup*.
+2. Speaker = `CABLE-B Input (VB-Audio Cable B)`; Microphone = `CABLE-A Output (VB-Audio Cable A)`.
+3. Noise suppression: Off (or Low).
+4. In a meeting, verify the same devices under … → Settings → Device settings.
+
+#### Zoom
+
+1. Settings → Audio: Speaker = `CABLE-B Input (VB-Audio Cable B)`; Microphone = `CABLE-A Output (VB-Audio Cable A)`.
+2. Uncheck *Automatically adjust microphone volume*.
+3. Background noise suppression: Low/Off, or enable *Original sound for musicians* and turn it on in the meeting.
+
+#### Windows
+
+1. Never set a CABLE device as the Windows **default** or **default communication** device: your real mic and headset stay the defaults.
+2. Sound control panel → *Communications* tab → **Do nothing**.
+3. All CABLE endpoints (Playback and Recording) use the same format: Properties → Advanced → **48000 Hz**.
+4. Same tab: uncheck *Allow applications to take exclusive control of this device* on every CABLE endpoint.
+5. Bluetooth headsets: prefer wired/USB; with Bluetooth, select the *Hands-Free* endpoints for both mic and headset.
+6. Crackling/stuttering audio: open the VB-CABLE control panel and raise **Max Latency**.
+
+#### FAQ
+
+- **I hear phrases like "I'm ready, let's talk" that nobody said.** The translator received only silence and invented a sentence. The call app isn't sending audio to CABLE-B: set its Speakers to `CABLE-B Input` and run the audio check.
+- **Nobody hears me (or they hear me cut off).** The call app's microphone isn't `CABLE-A Output`, or its noise cancellation removes the translated voice. Fix the mic and turn noise cancellation off.
+- **The other person hears an echo.** Your speakers leak into your mic. Use headphones.
+- **Before pressing play I hear the call untranslated.** That's direct mode, by design: while translation is off, the app passes your voice and the call through unchanged.
+
 For deeper debugging, open DevTools on the floating widget or setup view (View menu → Toggle Developer Tools).
 
 ---
@@ -560,8 +646,9 @@ For deeper debugging, open DevTools on the floating widget or setup view (View m
 | **M2** v0.2.0 | ✅ shipped | Bidirectional translation, dual sessions, language picker, device manager |
 | **M3** v0.3.0 | ✅ shipped | FloatingWidget bar UI, prefs persistence, three HTML entry points, Playwright E2E spike |
 | **M4** v0.4.0 | ✅ shipped | SetupView wizard (6 steps + review), bilingual UI (PT/EN), live cost dashboard, Test Translation backend, Meet config visual guide |
-| **M5** v0.5.0 | ✅ shipped (this version) | Distributable `.exe` (NSIS installer + portable), auto-update via `electron-updater` against GitHub Releases, GitHub Actions release workflow, `shell.openExternal` for external links, custom in-wizard `ConfirmModal`, persisted `meetConfirmed`, extracted `<SetupTitlebar />`, click-through on bar transparent margins, right-click menu i18n, stale-cable banner on Step 4 |
-| **M6+** | future | Code signing (paid cert) to silence Windows SmartScreen, macOS + Linux support, more UI languages (engine already supports 72), session transcript export, global keyboard shortcuts |
+| **M5** v0.5.0 | ✅ shipped | Distributable `.exe` (NSIS installer + portable), opt-in auto-update via `electron-updater` against GitHub Releases (`REALTIME_TRANSLATE_AUTO_UPDATE=1`), GitHub Actions release workflow, `shell.openExternal` for external links, custom in-wizard `ConfirmModal`, persisted `meetConfirmed`, extracted `<SetupTitlebar />`, click-through on bar transparent margins, right-click menu i18n, stale-cable banner on Step 4 |
+| **M6** v0.6.0 | 🧪 in QA | Call assistant: live transcript window (from translation, or OpenAI transcription in direct mode), typed speech spoken into the call, AI reply suggestions (OpenAI, Ollama, LM Studio or custom server), transcript export, Assistant settings |
+| **M7+** | future | Local Whisper transcription (on your PC), code signing (paid cert) to silence Windows SmartScreen, macOS + Linux support, more UI languages (engine already supports 72), global keyboard shortcuts |
 
 ---
 
@@ -573,7 +660,7 @@ The project is single-developer at the moment but contributions are welcome.
 - **Commits:** descriptive subject + body. The repo uses `Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>` for AI-pair-programmed commits.
 - **Tests:** new pure functions get unit tests. UI changes don't require tests until we land jsdom/happy-dom.
 - **TypeScript:** all flags must keep passing — see [Strict TypeScript notes](#strict-typescript-notes).
-- **i18n:** new user-visible strings go in **both** `pt-BR.json` and `en-US.json` in the same change. The TypeScript template-literal type catches missing keys at compile time.
+- **i18n:** new user-visible strings go in **all** locale files (`pt-BR.json`, `en-US.json`, `it-IT.json`) in the same change. The TypeScript template-literal type catches missing keys at compile time, and `tests/unit/i18n.test.ts` checks every locale has the same keys and placeholders.
 - **CSS:** prefer tokens (`var(--accent)`) over raw colors. Match the existing premium-discreet design language (Linear / Raycast / Arc).
 
 ---

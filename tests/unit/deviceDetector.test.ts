@@ -89,4 +89,24 @@ describe('detectVirtualCables', () => {
     expect(result.cableA?.playback?.label).toBe('CABLE-A Input (VB-Audio Cable A)');
     expect(result.cableA?.recording?.label).toBe('CABLE-A Output (VB-Audio Cable A)');
   });
+
+  it("ignores Chromium's 'default'/'communications' pseudo-devices (listed first on Windows)", () => {
+    const devices: DeviceInfo[] = [
+      { kind: 'audiooutput', deviceId: 'default', label: 'Default - CABLE-A Input (VB-Audio Cable A)' },
+      { kind: 'audiooutput', deviceId: 'communications', label: 'Communications - Headset (USB)' },
+      { kind: 'audioinput', deviceId: 'default', label: 'Default - Mic (USB)' },
+      { kind: 'audioinput', deviceId: 'communications', label: 'Communications - CABLE-B Output (VB-Audio Cable B)' },
+      { kind: 'audiooutput', deviceId: 'id-cable-a-in', label: 'CABLE-A Input (VB-Audio Cable A)' },
+      { kind: 'audioinput', deviceId: 'id-cable-a-out', label: 'CABLE-A Output (VB-Audio Cable A)' },
+      { kind: 'audiooutput', deviceId: 'id-cable-b-in', label: 'CABLE-B Input (VB-Audio Cable B)' },
+      { kind: 'audioinput', deviceId: 'id-cable-b-out', label: 'CABLE-B Output (VB-Audio Cable B)' },
+      { kind: 'audiooutput', deviceId: 'id-headset', label: 'Headset (USB)' },
+      { kind: 'audioinput', deviceId: 'id-mic', label: 'Mic (USB)' },
+    ];
+    const result = detectVirtualCables(devices);
+    expect(result.cableA?.playback?.deviceId).toBe('id-cable-a-in');
+    expect(result.cableB?.recording?.deviceId).toBe('id-cable-b-out');
+    expect(result.realDevices.inputs.map((d) => d.deviceId)).toEqual(['id-mic']);
+    expect(result.realDevices.outputs.map((d) => d.deviceId)).toEqual(['id-headset']);
+  });
 });

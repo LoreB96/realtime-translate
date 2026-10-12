@@ -7,12 +7,8 @@ import { Step3Cables } from './wizard/Step3Cables';
 import { Step4Devices } from './wizard/Step4Devices';
 import { Step5MeetConfig } from './wizard/Step5MeetConfig';
 import { Step6TestTranslation } from './wizard/Step6TestTranslation';
-import { ReviewScreen } from './review/ReviewScreen';
-
-// Stub steps — Tasks 8-11 replace with real components.
-const StubStep = ({ n }: { n: number }): JSX.Element => (
-  <div style={{ padding: 32, color: '#a1a1aa' }}>Step {n} placeholder — implemented in Task {5 + n}</div>
-);
+import { TroubleshootScreen } from './troubleshoot/TroubleshootScreen';
+import { SettingsScreen } from './settings/SettingsScreen';
 
 function renderStep(route: WizardRoute): JSX.Element {
   switch (route.step) {
@@ -22,13 +18,13 @@ function renderStep(route: WizardRoute): JSX.Element {
     case 4: return <Step4Devices mode={route.mode} />;
     case 5: return <Step5MeetConfig mode={route.mode} />;
     case 6: return <Step6TestTranslation mode={route.mode} />;
-    default: return <StubStep n={route.step} />;
   }
 }
 
 export function SetupRoot(): JSX.Element {
   const route = useHashRoute();
-  if (route.kind === 'review') return <ReviewScreen />;
+  if (route.kind === 'settings') return <SettingsScreen section={route.section} />;
+  if (route.kind === 'troubleshoot') return <TroubleshootScreen />;
   return (
     <WizardShell currentStep={route.step} totalSteps={6}>
       {renderStep(route)}

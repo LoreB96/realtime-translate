@@ -36,10 +36,10 @@ export function Step3Cables({ mode }: { mode?: 'edit' | undefined }): JSX.Elemen
   };
 
   const proceed = (): void => {
-    navigate(mode === 'edit' ? { kind: 'review' } : { kind: 'wizard', step: 4 });
+    navigate(mode === 'edit' ? { kind: 'settings', section: 'audio' } : { kind: 'wizard', step: 4 });
   };
   const back = (): void => {
-    navigate(mode === 'edit' ? { kind: 'review' } : { kind: 'wizard', step: 2 });
+    navigate(mode === 'edit' ? { kind: 'settings', section: 'audio' } : { kind: 'wizard', step: 2 });
   };
 
   if (detected === null) {

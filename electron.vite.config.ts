@@ -43,7 +43,8 @@ export default defineConfig({
         input: {
           offscreen: resolve('src/renderer/offscreen.html'),
           floatingWidget: resolve('src/renderer/floating-widget.html'),
-          setupView: resolve('src/renderer/setup-view.html')
+          setupView: resolve('src/renderer/setup-view.html'),
+          transcript: resolve('src/renderer/transcript.html')
         }
       }
     },

@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { AudioPipeline, type OffscreenController, type SessionLike } from '@main/translate/audioPipeline';
+import {
+  AudioDeviceError,
+  AudioPipeline,
+  type OffscreenController,
+  type SessionLike,
+} from '@main/translate/audioPipeline';
 
 class FakeOffscreen implements OffscreenController {
   startCaptureCalled = new Map<string, string>();
@@ -114,5 +119,71 @@ describe('AudioPipeline', () => {
     expect(failing.startPlaybackCalled.get('A')).toBe('cable-x');
     expect(failing.stoppedStreams.has('A')).toBe(true);
     expect(session.startCalled).toBe(false);
+  });
+
+  it('restartAudio() re-opens capture + playback without touching the session', async () => {
+    await pipeline.start();
+    offscreen.startCaptureCalled.clear();
+    offscreen.startPlaybackCalled.clear();
+    session.startCalled = false;
+    await pipeline.restartAudio();
+    expect(offscreen.stoppedStreams.has('A')).toBe(true);
+    expect(offscreen.startCaptureCalled.get('A')).toBe('mic-123');
+    expect(offscreen.startPlaybackCalled.get('A')).toBe('cable-a-456');
+    expect(session.startCalled).toBe(false);
+    expect(session.stopCalled).toBe(false);
+    // PCM from the new capture still reaches the same session.
+    offscreen.pcmCallbacks.get('A')?.('after-restart');
+    expect(session.appendCalls).toEqual(['after-restart']);
+  });
+
+  it('tags device errors with the failing side', async () => {
+    class FailingPlayback extends FakeOffscreen {
+      override async startPlayback(): Promise<void> {
+        throw new Error('setSinkId failed');
+      }
+    }
+    const failing = new FailingPlayback();
+    const p = new AudioPipeline({
+      streamId: 'B',
+      offscreen: failing,
+      session,
+      micDeviceId: 'cable-b-out',
+      outputDeviceId: 'headset',
+    });
+    const err = await p.start().catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(AudioDeviceError);
+    expect((err as AudioDeviceError).side).toBe('output');
+    expect((err as AudioDeviceError).message).toBe('setSinkId failed');
+    expect(failing.stoppedStreams.has('B')).toBe(true);
+    expect(session.startCalled).toBe(false);
+  });
+
+  it('restartAudio() rejects with an input error and leaves the session running', async () => {
+    let failCapture = false;
+    class Flaky extends FakeOffscreen {
+      override async startCapture(
+        streamId: string,
+        deviceId: string,
+        onPcm: (b64: string) => void,
+      ): Promise<void> {
+        if (failCapture) throw new Error('Requested device not found');
+        return super.startCapture(streamId, deviceId, onPcm);
+      }
+    }
+    const flaky = new Flaky();
+    const p = new AudioPipeline({
+      streamId: 'A',
+      offscreen: flaky,
+      session,
+      micDeviceId: 'mic',
+      outputDeviceId: 'cable-a',
+    });
+    await p.start();
+    failCapture = true;
+    const err = await p.restartAudio().catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(AudioDeviceError);
+    expect((err as AudioDeviceError).side).toBe('input');
+    expect(session.stopCalled).toBe(false);
   });
 });

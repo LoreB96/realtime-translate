@@ -1,14 +1,15 @@
 import type { JSX } from 'react';
 import { useT } from '../../../../shared/i18n/I18nProvider';
 
-export function MeetGuide(): JSX.Element {
+/** Screenshot walkthrough of Meet's audio settings; `mic`/`speaker` are the exact CABLE names. */
+export function MeetGuide({ mic, speaker }: { mic: string; speaker: string }): JSX.Element {
   const t = useT();
   const steps = [
     { n: 1, text: t('setup.meet.step1') },
     { n: 2, text: t('setup.meet.step2') },
     { n: 3, text: t('setup.meet.step3') },
-    { n: 4, text: t('setup.meet.step4') },
-    { n: 5, text: t('setup.meet.step5') },
+    { n: 4, text: t('setup.meet.step4', { mic }) },
+    { n: 5, text: t('setup.meet.step5', { speaker }) },
   ];
   return (
     <div className="meet-guide">

@@ -19,7 +19,7 @@ function Root(): JSX.Element | null {
         setLocale('en-US');
       });
     // SetupView lives in its own renderer process with a fresh zustand store —
-    // hydrate from prefs so ReviewScreen + Step4Devices see saved selections
+    // hydrate from prefs so Settings + Step4Devices see saved selections
     // (selectedMic, languages, etc.) instead of empty defaults. ~10ms file read.
     useStore.getState().hydrate().catch((err: unknown) => {
       // eslint-disable-next-line no-console

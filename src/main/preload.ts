@@ -2,6 +2,20 @@ import { contextBridge, ipcRenderer } from 'electron';
 import { IPC } from '../shared/events';
 import type { IpcInvokeMap, IpcSendMap } from './ipc/channels';
 
+type InvokeResult<K extends keyof IpcInvokeMap> = Promise<IpcInvokeMap[K]['result']>;
+
+/** Typed `ipcRenderer.on` wrapper returning an unsubscribe function. */
+function subscribe<K extends keyof IpcSendMap>(
+  channel: K,
+  cb: (payload: IpcSendMap[K]) => void,
+): () => void {
+  const handler = (_evt: unknown, payload: IpcSendMap[K]): void => cb(payload);
+  ipcRenderer.on(channel, handler);
+  return (): void => {
+    ipcRenderer.off(channel, handler);
+  };
+}
+
 const api = {
   hasApiKey: (): Promise<IpcInvokeMap[typeof IPC.GetApiKeyStatus]['result']> =>
     ipcRenderer.invoke(IPC.GetApiKeyStatus),
@@ -53,6 +67,9 @@ const api = {
     args: IpcInvokeMap[typeof IPC.SetBarMouseEvents]['args'],
   ): Promise<IpcInvokeMap[typeof IPC.SetBarMouseEvents]['result']> =>
     ipcRenderer.invoke(IPC.SetBarMouseEvents, args),
+
+  setBarExpanded: (expanded: boolean): InvokeResult<typeof IPC.SetBarExpanded> =>
+    ipcRenderer.invoke(IPC.SetBarExpanded, { expanded }),
 
   quit: (): Promise<IpcInvokeMap[typeof IPC.AppQuit]['result']> =>
     ipcRenderer.invoke(IPC.AppQuit),
@@ -131,6 +148,83 @@ const api = {
   // ApplyUpdate, which calls autoUpdater.quitAndInstall().
   applyUpdate: (): Promise<IpcInvokeMap[typeof IPC.ApplyUpdate]['result']> =>
     ipcRenderer.invoke(IPC.ApplyUpdate),
+
+  // Audio health + diagnostics.
+  getHealth: (): Promise<IpcInvokeMap[typeof IPC.HealthGet]['result']> =>
+    ipcRenderer.invoke(IPC.HealthGet),
+  runDiagnostics: (): Promise<IpcInvokeMap[typeof IPC.RunDiagnostics]['result']> =>
+    ipcRenderer.invoke(IPC.RunDiagnostics),
+  openTroubleshooting: (): Promise<IpcInvokeMap[typeof IPC.OpenTroubleshooting]['result']> =>
+    ipcRenderer.invoke(IPC.OpenTroubleshooting),
+  onHealth: (cb: (r: IpcSendMap[typeof IPC.HealthChanged]) => void): (() => void) => {
+    const handler = (_evt: unknown, r: IpcSendMap[typeof IPC.HealthChanged]): void => cb(r);
+    ipcRenderer.on(IPC.HealthChanged, handler);
+    return (): void => {
+      ipcRenderer.off(IPC.HealthChanged, handler);
+    };
+  },
+
+  // Assistant (M6): transcript window, assistant settings, typed speech, suggestions, STT.
+  openTranscriptView: (): InvokeResult<typeof IPC.OpenTranscriptView> =>
+    ipcRenderer.invoke(IPC.OpenTranscriptView),
+  openAssistantSettings: (): InvokeResult<typeof IPC.OpenAssistantSettings> =>
+    ipcRenderer.invoke(IPC.OpenAssistantSettings),
+  getTranscript: (): InvokeResult<typeof IPC.TranscriptGet> =>
+    ipcRenderer.invoke(IPC.TranscriptGet),
+  clearTranscript: (): InvokeResult<typeof IPC.TranscriptClear> =>
+    ipcRenderer.invoke(IPC.TranscriptClear),
+  exportTranscript: (
+    format: IpcInvokeMap[typeof IPC.TranscriptExport]['args']['format'],
+  ): InvokeResult<typeof IPC.TranscriptExport> =>
+    ipcRenderer.invoke(IPC.TranscriptExport, { format }),
+  setTranscriptAlwaysOnTop: (value: boolean): InvokeResult<typeof IPC.TranscriptSetAlwaysOnTop> =>
+    ipcRenderer.invoke(IPC.TranscriptSetAlwaysOnTop, { value }),
+  setAssistantPrefs: (
+    patch: IpcInvokeMap[typeof IPC.PrefsSetAssistant]['args'],
+  ): InvokeResult<typeof IPC.PrefsSetAssistant> =>
+    ipcRenderer.invoke(IPC.PrefsSetAssistant, patch),
+  getLlmKeyHint: (): InvokeResult<typeof IPC.LlmKeyGetHint> =>
+    ipcRenderer.invoke(IPC.LlmKeyGetHint),
+  setLlmKey: (value: string): InvokeResult<typeof IPC.LlmKeySet> =>
+    ipcRenderer.invoke(IPC.LlmKeySet, { value }),
+  clearLlmKey: (): InvokeResult<typeof IPC.LlmKeyClear> => ipcRenderer.invoke(IPC.LlmKeyClear),
+  testLlm: (): InvokeResult<typeof IPC.LlmTest> => ipcRenderer.invoke(IPC.LlmTest),
+  listLlmModels: (): InvokeResult<typeof IPC.LlmListModels> =>
+    ipcRenderer.invoke(IPC.LlmListModels),
+  speakText: (
+    args: IpcInvokeMap[typeof IPC.SpeakText]['args'],
+  ): InvokeResult<typeof IPC.SpeakText> => ipcRenderer.invoke(IPC.SpeakText, args),
+  stopSpeaking: (): InvokeResult<typeof IPC.SpeakStop> => ipcRenderer.invoke(IPC.SpeakStop),
+  suggestNow: (): InvokeResult<typeof IPC.SuggestNow> => ipcRenderer.invoke(IPC.SuggestNow),
+  getSuggestions: (): InvokeResult<typeof IPC.SuggestionsGet> =>
+    ipcRenderer.invoke(IPC.SuggestionsGet),
+  getSttStatus: (): InvokeResult<typeof IPC.SttStatusGet> =>
+    ipcRenderer.invoke(IPC.SttStatusGet),
+  retryStt: (): InvokeResult<typeof IPC.SttRetry> => ipcRenderer.invoke(IPC.SttRetry),
+  getAssistantContext: (): InvokeResult<typeof IPC.AssistantContextGet> =>
+    ipcRenderer.invoke(IPC.AssistantContextGet),
+  getUsage: (): InvokeResult<typeof IPC.UsageGet> => ipcRenderer.invoke(IPC.UsageGet),
+  resetUsage: (): InvokeResult<typeof IPC.UsageReset> => ipcRenderer.invoke(IPC.UsageReset),
+  onUsage: (cb: (u: IpcSendMap[typeof IPC.UsageChanged]) => void): (() => void) =>
+    subscribe(IPC.UsageChanged, cb),
+
+  onTranscriptEntry: (cb: (e: IpcSendMap[typeof IPC.TranscriptEntry]) => void): (() => void) =>
+    subscribe(IPC.TranscriptEntry, cb),
+  onTranscriptCleared: (cb: () => void): (() => void) =>
+    subscribe(IPC.TranscriptCleared, () => cb()),
+  onSuggestions: (cb: (s: IpcSendMap[typeof IPC.SuggestionsChanged]) => void): (() => void) =>
+    subscribe(IPC.SuggestionsChanged, cb),
+  onSttStatus: (cb: (s: IpcSendMap[typeof IPC.SttStatusChanged]) => void): (() => void) =>
+    subscribe(IPC.SttStatusChanged, cb),
+  onAssistantError: (cb: (e: IpcSendMap[typeof IPC.AssistantError]) => void): (() => void) =>
+    subscribe(IPC.AssistantError, cb),
+  onAssistantPrefs: (
+    cb: (p: IpcSendMap[typeof IPC.AssistantPrefsChanged]) => void,
+  ): (() => void) => subscribe(IPC.AssistantPrefsChanged, cb),
+  onAssistantContext: (
+    cb: (c: IpcSendMap[typeof IPC.AssistantContextChanged]) => void,
+  ): (() => void) => subscribe(IPC.AssistantContextChanged, cb),
+
   onUpdateAvailable: (
     cb: (info: IpcSendMap[typeof IPC.UpdateAvailable]) => void,
   ): (() => void) => {

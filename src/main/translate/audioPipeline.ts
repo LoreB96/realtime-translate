@@ -23,20 +23,38 @@ export interface AudioPipelineConfig {
   outputDeviceId: string;
 }
 
+/**
+ * Opening an audio device failed. `side` says which one: 'input' (capture / getUserMedia)
+ * or 'output' (playback / setSinkId). Keeps the original message so UI error states stay
+ * unchanged.
+ */
+export class AudioDeviceError extends Error {
+  constructor(
+    readonly side: 'input' | 'output',
+    cause: unknown,
+  ) {
+    super(cause instanceof Error ? cause.message : String(cause));
+    this.name = 'AudioDeviceError';
+  }
+}
+
 export class AudioPipeline {
   constructor(private readonly cfg: AudioPipelineConfig) {}
 
   async start(): Promise<void> {
-    await this.cfg.offscreen.startPlayback(this.cfg.streamId, this.cfg.outputDeviceId);
-    try {
-      await this.cfg.offscreen.startCapture(this.cfg.streamId, this.cfg.micDeviceId, (b64) =>
-        this.cfg.session.appendAudio(b64),
-      );
-    } catch (err) {
-      this.cfg.offscreen.stopStream(this.cfg.streamId);
-      throw err;
-    }
+    await this.openAudio();
     this.cfg.session.start();
+  }
+
+  /**
+   * Re-opens capture + playback on the same devices without touching the session: the
+   * WebSocket keeps running, only the dead audio streams are replaced (device re-plugged,
+   * driver restarted, AudioContext suspended). Rejects with AudioDeviceError, leaving the
+   * stream stopped.
+   */
+  async restartAudio(): Promise<void> {
+    this.cfg.offscreen.stopStream(this.cfg.streamId);
+    await this.openAudio();
   }
 
   handleSessionAudio(base64: string): void {
@@ -46,5 +64,22 @@ export class AudioPipeline {
   stop(): void {
     this.cfg.session.stop();
     this.cfg.offscreen.stopStream(this.cfg.streamId);
+  }
+
+  private async openAudio(): Promise<void> {
+    try {
+      await this.cfg.offscreen.startPlayback(this.cfg.streamId, this.cfg.outputDeviceId);
+    } catch (err) {
+      this.cfg.offscreen.stopStream(this.cfg.streamId);
+      throw new AudioDeviceError('output', err);
+    }
+    try {
+      await this.cfg.offscreen.startCapture(this.cfg.streamId, this.cfg.micDeviceId, (b64) =>
+        this.cfg.session.appendAudio(b64),
+      );
+    } catch (err) {
+      this.cfg.offscreen.stopStream(this.cfg.streamId);
+      throw new AudioDeviceError('input', err);
+    }
   }
 }

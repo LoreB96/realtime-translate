@@ -51,3 +51,73 @@ export interface BidirectionalArgs {
   fromMeetDeviceId: string;
   headsetDeviceId: string;
 }
+
+/** The four user-selected audio endpoints, named by role (see BidirectionalArgs). */
+export type DeviceRole = 'mic' | 'toCall' | 'fromCall' | 'headset';
+
+/**
+ * Audio-health problems the app can detect on its own. Each one maps to a concrete fix the
+ * UI explains (widget chip + troubleshooting screen).
+ * - device-missing: a selected device is no longer present (unplugged, VB-Cable removed).
+ * - device-failed:  opening/using the device failed (getUserMedia, setSinkId, track ended).
+ * - mic-silent:     the mic has delivered only exact digital silence since it was opened
+ *                   (probably muted in Windows/hardware).
+ * - call-silent:    nothing at all has arrived from the call app on CABLE-B since
+ *                   translation started (its speaker is not set to CABLE-B Input).
+ * - audio-suspended: an audio context was suspended by the OS and could not be resumed.
+ * - mic-quiet / call-quiet: the source has sound, but too quiet for the silence gate in
+ *                   front of the translation model, so nothing gets translated.
+ */
+export type HealthIssueCode =
+  | 'device-missing'
+  | 'device-failed'
+  | 'mic-silent'
+  | 'call-silent'
+  | 'audio-suspended'
+  | 'mic-quiet'
+  | 'call-quiet';
+
+export interface HealthIssue {
+  code: HealthIssueCode;
+  role: DeviceRole;
+  /** Technical detail for logs/tooltips. Never contains audio or transcript data. */
+  detail?: string;
+  /** Epoch ms when the issue was first raised. */
+  sinceMs: number;
+}
+
+/** What the app is currently doing with audio. */
+export type AudioMode = 'off' | 'passthrough' | 'translating';
+
+export interface HealthReport {
+  mode: AudioMode;
+  issues: HealthIssue[];
+}
+
+export type DiagnosticCheckId =
+  | 'api-key'
+  | 'devices-saved'
+  | 'mic-present'
+  | 'mic-signal'
+  | 'to-call-present'
+  | 'cable-a-loopback'
+  | 'from-call-present'
+  | 'call-signal'
+  | 'headset-present'
+  | 'headset-tone';
+
+export type DiagnosticStatus = 'pass' | 'warn' | 'fail' | 'skipped';
+
+export interface DiagnosticCheck {
+  id: DiagnosticCheckId;
+  status: DiagnosticStatus;
+  /** Optional measured value, e.g. peak level in dBFS. */
+  measuredDb?: number;
+  detail?: string;
+}
+
+export interface DiagnosticsResult {
+  checks: DiagnosticCheck[];
+  /** Epoch ms when the run finished. */
+  finishedMs: number;
+}

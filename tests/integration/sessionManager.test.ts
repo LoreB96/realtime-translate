@@ -164,10 +164,9 @@ describe('SessionManager', () => {
     const wsB = FakeWebSocket.instances[1]!;
     wsA.simulateOpen();
     wsB.simulateOpen();
-    // Server-side error on A
-    wsA.onmessage?.(
-      JSON.stringify({ type: 'error', error: { message: 'A failed' } }),
-    );
+    // Fatal failure on A (e.g. key revoked mid-call → reconnect rejected with 401).
+    wsA.simulateError(new Error('Unexpected server response: 401'));
+    wsA.close(1006, '');
     // Last emitted A state is error; B state is still active
     const aStates = onState.mock.calls
       .map((c) => c[0])
@@ -208,6 +207,150 @@ describe('SessionManager', () => {
     const aStates = onState.mock.calls
       .map((c) => c[0])
       .filter((s) => (s as { direction: Direction }).direction === 'A');
-    expect((aStates[aStates.length - 1] as { state: SessionState }).state.kind).toBe('error');
+    expect((aStates[aStates.length - 1] as { state: SessionState }).state).toEqual({
+      kind: 'error',
+      message: 'A capture failed',
+    });
+  });
+
+  it('start() failure tears down the surviving direction and keeps the real error last', async () => {
+    class FailingOffscreenB extends FakeOffscreen {
+      override async startCapture(
+        streamId: string,
+        deviceId: string,
+        onPcm: (b64: string) => void,
+      ): Promise<void> {
+        if (streamId === 'B') throw new Error('B capture failed');
+        return super.startCapture(streamId, deviceId, onPcm);
+      }
+    }
+    const offB = new FailingOffscreenB();
+    const mgr = new SessionManager(buildConfig({ offscreen: offB }));
+    await expect(mgr.start()).rejects.toThrow('B capture failed');
+    // A's socket was opened and must be closed, not left running unreferenced.
+    expect(FakeWebSocket.instances).toHaveLength(1);
+    expect(FakeWebSocket.instances[0]!.closed).toBe(true);
+    expect(offB.stoppedStreams.has('A')).toBe(true);
+    const last = onState.mock.calls[onState.mock.calls.length - 1]![0];
+    expect(last).toEqual({ direction: 'B', state: { kind: 'error', message: 'B capture failed' } });
+    // Caller's defensive stop() is a no-op.
+    await expect(mgr.stop()).resolves.toBeUndefined();
+  });
+
+  it('reports the failing device side on start', async () => {
+    class FailingPlaybackA extends FakeOffscreen {
+      override async startPlayback(streamId: string, deviceId: string): Promise<void> {
+        if (streamId === 'A') throw new Error('setSinkId failed');
+        return super.startPlayback(streamId, deviceId);
+      }
+    }
+    const onDeviceFailure = vi.fn();
+    const mgr = new SessionManager(
+      buildConfig({ offscreen: new FailingPlaybackA(), onDeviceFailure }),
+    );
+    await expect(mgr.start()).rejects.toThrow('setSinkId failed');
+    expect(onDeviceFailure).toHaveBeenCalledWith({
+      direction: 'A',
+      side: 'output',
+      message: 'setSinkId failed',
+    });
+    const aStates = onState.mock.calls
+      .map((c) => c[0])
+      .filter((s) => (s as { direction: Direction }).direction === 'A');
+    expect((aStates[aStates.length - 1] as { state: SessionState }).state).toEqual({
+      kind: 'error',
+      message: 'setSinkId failed',
+    });
+  });
+
+  it('restartAudio() re-opens one direction and keeps both sockets open', async () => {
+    const mgr = new SessionManager(buildConfig());
+    await mgr.start();
+    FakeWebSocket.instances[0]!.simulateOpen();
+    FakeWebSocket.instances[1]!.simulateOpen();
+    offscreen.startCaptureCalled.clear();
+    offscreen.startPlaybackCalled.clear();
+    await mgr.restartAudio('B');
+    expect(offscreen.startCaptureCalled.get('B')).toBe('cableB-output');
+    expect(offscreen.startPlaybackCalled.get('B')).toBe('headset');
+    expect(offscreen.startCaptureCalled.has('A')).toBe(false);
+    expect(FakeWebSocket.instances).toHaveLength(2);
+    expect(FakeWebSocket.instances.every((ws) => !ws.closed)).toBe(true);
+    await mgr.stop();
+  });
+
+  it('restartAudio() reports device failures and rejects when not running', async () => {
+    let failB = false;
+    class Flaky extends FakeOffscreen {
+      override async startCapture(
+        streamId: string,
+        deviceId: string,
+        onPcm: (b64: string) => void,
+      ): Promise<void> {
+        if (failB && streamId === 'B') throw new Error('Requested device not found');
+        return super.startCapture(streamId, deviceId, onPcm);
+      }
+    }
+    const onDeviceFailure = vi.fn();
+    const mgr = new SessionManager(buildConfig({ offscreen: new Flaky(), onDeviceFailure }));
+    await expect(mgr.restartAudio('A')).rejects.toThrow('not running');
+    await mgr.start();
+    failB = true;
+    await expect(mgr.restartAudio('B')).rejects.toThrow('Requested device not found');
+    expect(onDeviceFailure).toHaveBeenCalledWith({
+      direction: 'B',
+      side: 'input',
+      message: 'Requested device not found',
+    });
+    await mgr.stop();
+  });
+
+  it('routes session A input transcript deltas to onTranscript with direction A', async () => {
+    const mgr = new SessionManager(buildConfig());
+    await mgr.start();
+    const wsA = FakeWebSocket.instances[0]!;
+    wsA.simulateOpen();
+    wsA.onmessage?.(JSON.stringify({ type: 'session.input_transcript.delta', delta: 'olá' }));
+    expect(onTranscript).toHaveBeenCalledWith({ direction: 'A', kind: 'input', text: 'olá' });
+    void mgr;
+  });
+
+  it('without the input transcription option, each session sends exactly one update', async () => {
+    const mgr = new SessionManager(buildConfig());
+    await mgr.start();
+    for (const ws of FakeWebSocket.instances) {
+      ws.simulateOpen();
+      expect(ws.sent).toHaveLength(1);
+    }
+    void mgr;
+  });
+
+  it('passes the input transcription model and rejection callback to both sessions', async () => {
+    const onRejected = vi.fn();
+    const mgr = new SessionManager(
+      buildConfig({
+        inputTranscriptionModel: 'gpt-realtime-whisper',
+        onInputTranscriptionRejected: onRejected,
+      }),
+    );
+    await mgr.start();
+    expect(FakeWebSocket.instances).toHaveLength(2);
+    for (const ws of FakeWebSocket.instances) {
+      ws.simulateOpen();
+      expect(ws.sent).toHaveLength(2);
+      const second = JSON.parse(ws.sent[1]!);
+      expect(second.session.audio.input.transcription.model).toBe('gpt-realtime-whisper');
+    }
+    const rejection = JSON.stringify({
+      type: 'error',
+      error: { code: 'unknown_parameter', param: 'session.audio.input.transcription' },
+    });
+    FakeWebSocket.instances[1]!.onmessage?.(rejection);
+    expect(onRejected).toHaveBeenCalledTimes(1);
+    expect(onRejected).toHaveBeenLastCalledWith('B');
+    FakeWebSocket.instances[0]!.onmessage?.(rejection);
+    expect(onRejected).toHaveBeenCalledTimes(2);
+    expect(onRejected).toHaveBeenLastCalledWith('A');
+    void mgr;
   });
 });

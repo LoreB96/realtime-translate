@@ -105,4 +105,35 @@ describe('logger', () => {
     const stringified = JSON.stringify(parsed);
     expect(stringified).toContain('[max-depth]');
   });
+
+  it('redacts the assistant content keys (M6)', () => {
+    const log = createLogger({ source: 'assistant', sink });
+    log.info('evt', { text: 'secret', original: 'x', count: 2 });
+    const line = captured[0]!;
+    expect(line).not.toContain('secret');
+    expect(JSON.parse(line).data).toEqual({ count: 2 });
+  });
+
+  it('drops every M6 content key, nested too', () => {
+    const keys = [
+      'text',
+      'original',
+      'translated',
+      'content',
+      'messages',
+      'prompt',
+      'instructions',
+      'suggestions',
+      'items',
+      'choices',
+      'input',
+    ];
+    const log = createLogger({ source: 'assistant', sink });
+    const data: Record<string, unknown> = { status: 200 };
+    for (const k of keys) data[k] = 'leak';
+    log.info('evt', { ...data, nested: { ...data } });
+    const line = captured[0]!;
+    expect(line).not.toContain('leak');
+    expect(JSON.parse(line).data).toEqual({ status: 200, nested: { status: 200 } });
+  });
 });

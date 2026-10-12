@@ -63,6 +63,19 @@ describe('UserPrefsStore', () => {
     });
   });
 
+  it('every save also writes the backup copy', () => {
+    store.save({ languages: { source: 'it', target: 'en' } });
+    expect(fs.readFile(`${path}.bak`)?.toString('utf8')).toBe(fs.readFile(path)?.toString('utf8'));
+  });
+
+  it('a corrupt or missing prefs.json falls back to the backup', () => {
+    store.save({ languages: { source: 'it', target: 'en' }, meetConfirmed: true });
+    fs.writeFile(path, Buffer.from('{trunc', 'utf8'));
+    expect(store.load()).toEqual({ languages: { source: 'it', target: 'en' }, meetConfirmed: true });
+    fs.files.delete(path);
+    expect(store.load().meetConfirmed).toBe(true);
+  });
+
   it('load() returns empty object when file is corrupt JSON (no throw)', () => {
     fs.writeFile(path, Buffer.from('{not valid json', 'utf8'));
     expect(store.load()).toEqual({});
@@ -85,5 +98,45 @@ describe('UserPrefsStore', () => {
 
     store.setUiLanguage('pt-BR');
     expect(store.load().uiLanguage).toBe('pt-BR');
+  });
+
+  it('setAssistant deep-merges llm, persists the partial and returns resolved prefs', () => {
+    store.setLanguages({ source: 'pt', target: 'en' });
+    store.setAssistant({ llm: { preset: 'ollama', baseUrl: 'http://127.0.0.1:11434/v1' } });
+    const resolved = store.setAssistant({ llm: { model: 'm' }, sttEngine: 'openai' });
+    expect(resolved.llm).toEqual({
+      preset: 'ollama',
+      baseUrl: 'http://127.0.0.1:11434/v1',
+      model: 'm',
+      reasoningEffort: 'none',
+    });
+    expect(resolved.sttEngine).toBe('openai');
+    expect(resolved.ttsVoice).toBe('cedar');
+    expect(store.load()).toEqual({
+      languages: { source: 'pt', target: 'en' },
+      assistant: {
+        sttEngine: 'openai',
+        llm: { preset: 'ollama', baseUrl: 'http://127.0.0.1:11434/v1', model: 'm' },
+      },
+    });
+  });
+
+  it('setTranscriptWindow merges over the defaults, then over the stored value', () => {
+    store.setTranscriptWindow({ x: 10, y: 20 });
+    expect(store.load().transcriptWindow).toEqual({
+      x: 10,
+      y: 20,
+      width: 420,
+      height: 640,
+      alwaysOnTop: false,
+    });
+    store.setTranscriptWindow({ alwaysOnTop: true, width: 500 });
+    expect(store.load().transcriptWindow).toEqual({
+      x: 10,
+      y: 20,
+      width: 500,
+      height: 640,
+      alwaysOnTop: true,
+    });
   });
 });

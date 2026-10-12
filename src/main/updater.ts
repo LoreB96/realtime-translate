@@ -22,11 +22,25 @@ export interface AutoUpdateOptions {
   logger?: Logger;
 }
 
+/** Env var that opts a packaged install into auto-update. Anything other than '1' = off. */
+export const AUTO_UPDATE_ENV = 'REALTIME_TRANSLATE_AUTO_UPDATE';
+
 export function setupAutoUpdate(opts: AutoUpdateOptions): AutoUpdateHandle {
   // Skip in dev mode — autoUpdater requires a packaged app and signed metadata.
   // Without this, the dev console gets ~5 ENOENT errors at startup as it
   // looks for app-update.yml that doesn't exist.
-  if (!app.isPackaged) {
+  //
+  // Also off by default in packaged builds: app-update.yml is generated even with
+  // `--publish never` and points at build.publish (the upstream repo), and the NSIS
+  // updater installs silently on quit with no signature check for unsigned builds — a
+  // newer upstream release would overwrite a locally built/modified install. Opt in
+  // with REALTIME_TRANSLATE_AUTO_UPDATE=1. Never for the portable exe: electron-updater
+  // has no portable support and would install a separate NSIS copy instead.
+  if (
+    !app.isPackaged ||
+    process.env[AUTO_UPDATE_ENV] !== '1' ||
+    process.env.PORTABLE_EXECUTABLE_FILE
+  ) {
     return {
       checkNow: async () => undefined,
       quitAndInstall: () => undefined,

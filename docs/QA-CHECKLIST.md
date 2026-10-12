@@ -437,6 +437,7 @@ Final manual gate before tagging M5. This adds packaged-installer testing on top
       - `git push origin v0.5.1`
       - Wait for the release.yml workflow to complete (~5-10 min)
       - Confirm a v0.5.1 GitHub Release exists with `.exe` + `latest.yml` attached
+    - Opt in to auto-update (off by default): `setx REALTIME_TRANSLATE_AUTO_UPDATE 1`, then sign out/in or open a new shell so the variable is visible (the portable exe never auto-updates)
     - Restart the installed v0.5.0 app
     - Wait 5+ seconds after launch — the auto-update check fires
     - Verify: `↑ Downloading v0.5.1…` badge appears on the bar (dim, not clickable yet)
@@ -467,3 +468,153 @@ git push origin v0.5.0-m5
 ```
 
 The release.yml workflow then builds + uploads artifacts to a GitHub Release matching the tag. Once that completes, anyone running v0.5.0 (or earlier dev builds with auto-update enabled) gets prompted on next launch.
+
+---
+
+## Audio health, diagnostics & passthrough
+
+Run on Windows with VB-CABLE A+B installed and setup completed. Use a real call (Meet, Teams or Zoom) with a second device as the other party. Check the chip and the Troubleshooting screen at least once in each UI language (Português, English, Italiano).
+
+### Passthrough (direct mode)
+
+- [ ] With the bar idle and the setup window closed, the bar shows a dim **Direct audio** label; its tooltip says the call is untranslated and ▶ translates
+- [ ] The other party hears you untranslated; you hear them in your headset
+- [ ] Press ▶: direct audio stops (no double audio) and translation starts; press ■: direct audio resumes within ~1 s
+- [ ] Opening Settings stops direct audio; closing it resumes it
+
+### Silence gate
+
+- [ ] Start translation and stay silent on both sides for 60 s: no invented phrases ("I'm ready, let's talk", "Thank you", …) reach either side
+- [ ] The cost meter grows noticeably slower while both sides are silent than while talking
+- [ ] Speaking softly (normal headset level) is still translated; the gate doesn't clip the start of sentences
+
+### Health chip (one item per code)
+
+For each: check the chip color and short label, that the tooltip says what is wrong AND how to fix it, and that a click opens Troubleshooting.
+
+- [ ] `call-silent` (amber, "No audio from call"): set the call app's Speakers to the real headset instead of CABLE-B and translate for >10 s while the other party talks
+- [ ] `mic-silent` (amber, "Mic muted"): mute the mic (hardware or Windows) during translation
+- [ ] `device-missing` / headset (red, "Headset disconnected"): unplug a USB/BT headset during translation
+- [ ] `device-missing` / mic (red, "Mic disconnected"): unplug the mic during translation
+- [ ] `device-missing` / cable (red, "CABLE-A missing" / "CABLE-B missing"): disable a CABLE endpoint in Windows Sound during translation
+- [ ] `device-failed` (red): hold the mic in exclusive mode from another app, then start translation
+- [ ] `audio-suspended` (red, "Audio paused"): sleep and resume the PC during translation
+- [ ] Fixing the cause clears the chip without restarting the app
+- [ ] Worst-case width (translating + latency + cost + chip + update badge): nothing overflows the bar and the quit button stays visible
+
+### Device unplug / replug recovery
+
+- [ ] Unplug the headset during translation → chip appears; replug → audio resumes on the headset automatically and the chip clears
+- [ ] Same while idle in direct mode: unplug/replug the headset → direct audio resumes
+- [ ] Disable then re-enable CABLE-B Output in Windows Sound → capture resumes without restarting the app
+
+### Audio check (Troubleshooting screen)
+
+- [ ] Right-click bar → Troubleshooting opens the screen; Settings → "Troubleshooting & audio check" → Open also works
+- [ ] The device-name box shows this PC's exact CABLE-A Output / CABLE-B Input labels; Copy puts the name on the clipboard
+- [ ] Running the check while translating shows "Stop the translation first" and nothing else happens
+- [ ] Running it while idle, speaking and pressing "Test speakers" in the call app: spinner while running, then every check passes and a test tone plays on the headset
+- [ ] With the call app's speaker on the wrong device, "Sound from the call app arrives" fails and the fix names CABLE-B Input
+- [ ] With the mic muted, "Your voice reaches the app" warns/fails with a fix and shows the measured level in dB
+- [ ] "Problems right now" lists the live health issues with fixes, or "No problems detected right now"
+- [ ] The Meet/Teams/Zoom/Windows guides and the FAQ expand and show the exact device names
+- [ ] Wizard Step 5 shows the device-name box, the noise-cancellation warning and the "Guides for Teams, Zoom and Windows" button
+
+---
+
+## M6 Assistant (live transcript, typed speech, reply suggestions)
+
+Final manual gate for M6. Run on Windows with VB-CABLE A+B installed, setup completed and a real call (Meet, Teams or Zoom) with a second device as the other party. Use an OpenAI key with access to `gpt-4o-mini-transcribe`, `gpt-4o-mini-tts` and `gpt-5-mini`. For the local-LLM checks install [Ollama](https://ollama.com) and run `ollama pull qwen3:8b`.
+
+**Scope:** M6 ships OpenAI speech-to-text only. Local Whisper, the `app://` production origin and COOP/COEP are deferred to M7, so there are no `crossOriginIsolated`, model-download or model-cache checks here.
+
+### Automated gate (verified 2026-10-12 by U12)
+
+- [x] `npm run typecheck` clean
+- [x] `npm run lint` clean
+- [x] `npx vitest run`: 49 files, 558 tests passing (baseline before M6: 243)
+- [x] `npm run build` passes (`out/renderer/transcript.html` emitted next to the other pages)
+- [x] Static privacy check: `grep -rnE "logger\.(info|warn|error|debug)\([^)]*(text|original|translated|content|prompt|suggest)" src/main` has no hits; every logger call in `src/main/{transcript,llm,tts,stt,assistant}` logs event names, codes, counts, durations and model ids only
+- [ ] Optional packaged smoke (`npm run dist`, run `release/win-unpacked`): bar, setup and direct audio work; the transcript window opens from the bar menu (it loads from `file://` like the other pages); OpenAI STT produces entries; typed speech is audible in the call
+
+### Opening the assistant
+
+- [ ] Right-click the bar: the first item is **Live transcript** and it opens the transcript window; a second click focuses the same window (single instance)
+- [ ] Settings → Review shows a 7th row **Assistant: transcript, AI, voice** with the current transcription engine and AI model; Open goes to `#/assistant`
+- [ ] Transcript window menu → Assistant settings opens Settings on `#/assistant` **and direct audio keeps playing** (the call is not cut)
+- [ ] "Open the transcript window when the app starts" on → quit and relaunch: the window opens after the bar (only when setup is complete)
+- [ ] Pin toggle keeps the window above the call app; size and position persist across relaunch
+- [ ] Move the window to a second monitor, quit, disconnect that monitor, relaunch: the window comes back on a visible screen (off-screen bounds recovered)
+
+### Live transcript
+
+- [ ] Not translating, transcription off: the window shows the **Transcribe with OpenAI** call to action with the cost note; one click turns OpenAI STT on and the header says "Direct audio — transcribing with OpenAI"
+- [ ] Without an OpenAI key the call-to-action button is disabled with the no-key hint; adding the key in Settings starts STT without a restart
+- [ ] (§16.1) With OpenAI STT and no translation, speech on both sides appears within about 3 s of the speaker pausing; direct audio shows no added latency or gaps
+- [ ] (§16.2) While translating, both sides appear with the translation text, with no extra settings; ▶ stops STT (no double billing) and ■ resumes it
+- [ ] Leave the mic idle for 10 min in direct mode (`pass-A` parks): STT for A stops, B keeps transcribing; speak again (wake) and A transcribes again
+- [ ] "Also transcribe the original speech while translating" on, then Start: the source-language line appears, or an `input-transcript-unsupported` notice appears and translation continues correctly in both directions (see verification notes)
+- [ ] "Translate what the other person says when not translating" on: `them` entries in direct mode show a line in your language
+- [ ] Bubbles: `me` right/accent, `them` left; caret on unfinished entries; time on hover; scrolling up shows "Jump to latest"
+- [ ] Clear (with confirm) empties the window; Export .txt and Export .md save files with both languages; Cancel in the save dialog writes nothing
+- [ ] Offline (disable the network) with OpenAI STT: the header shows an error with Retry; direct audio is unaffected; network back + Retry resumes
+
+### Typed speech
+
+- [ ] (§16.3) Source it / target en, type "Riesci a sentirmi?" and press Enter: English is spoken into the call in direct mode **and** while translating; the entry shows original + translation, a keyboard badge, and reaches done
+- [ ] Two messages sent quickly are spoken in submission order; Stop cancels both (the unfinished one shows cancelled, without Retry)
+- [ ] "Translate to <lang>" off: the text is spoken as typed; the toggle is hidden when both languages are equal
+- [ ] Shift+Enter inserts a newline; the counter stops at 2000 characters
+- [ ] With Settings open on the wizard/review (not `#/assistant`), sending is refused with `tts-busy-setup`
+- [ ] Without an "Output to call" (CABLE-A) device: `tts-no-device`
+- [ ] Disable then re-enable CABLE-A Input in Windows Sound, then send a message: it is spoken (TTS streams reopen)
+- [ ] A TTS stream event (e.g. the CABLE-A unplug above) does not restart call audio or show a health chip
+- [ ] "Also play it on my headset" on: you also hear the spoken message in the headset; the echo warning is shown in Settings
+
+### Reply suggestions
+
+- [ ] (§16.4) The other person asks a question ending in "?": up to 3 suggestions appear within about 5 s while translating (`gpt-5-mini`) and about 6 s in direct mode with OpenAI STT
+- [ ] Clicking a card copies it into the composer; Speak plays it into the call; speaking it does not clear the suggestions
+- [ ] Answering by voice (2+ words) clears ready suggestions; keyboard noise does not
+- [ ] "Suggest" works with automatic suggestions off; turning suggestions off hides the panel
+- [ ] Direct mode without transcription shows the "Turn on transcription so suggestions can follow the call" hint in the suggestions panel
+
+### AI model (LLM)
+
+- [ ] OpenAI preset: Test connection shows ✓ and the time in ms; "Load models" lists chat models only
+- [ ] (§16.5) Ollama preset (`http://127.0.0.1:11434/v1`, model `qwen3:8b`): Test connection works (the first test may take long while the model loads); typed-speech translation and suggestions work
+- [ ] Stop Ollama: Test and suggestions show `llm-unreachable` with the "Is Ollama running? Start it, then run ollama pull …" hint; translation and direct audio are unaffected
+- [ ] Wrong model name: `llm-model-missing` with the hint
+- [ ] Base URL `http://192.168.x.x:11434/v1`: the insecure-URL warning is shown; `http://127.0.0.1` shows none
+- [ ] The custom API key field appears only for non-OpenAI hosts; a saved key shows only its last 4 characters; the OpenAI key is never sent to a non-OpenAI host
+- [ ] LM Studio preset (`http://127.0.0.1:1234/v1`) works if LM Studio is installed (optional)
+
+### Privacy (§16.7)
+
+- [ ] After using transcript, typed speech, suggestions and their-speech translation, search `%APPDATA%\realtime-translate\logs\*.jsonl` for one spoken sentence and one typed sentence: **not found**
+- [ ] Nothing is written to disk except on Export
+
+### i18n
+
+- [ ] Switch the UI to Italiano and Português: the transcript window, `#/assistant`, the bar menu item, the Review row and every error message are translated (no raw keys, no English leftovers)
+
+### M6 verification notes (live API checks, UNVERIFIED until filled in)
+
+These depend on live OpenAI / Ollama behaviour and are not covered by unit tests. Record the result and the date; each item is isolated in one file so a fix stays local.
+
+| Item | Where the code lives | Result |
+|---|---|---|
+| GA transcription `session.update` shape accepted (`type: 'transcription'`, `audio.input.format` / `transcription` / `noise_reduction`) | `src/main/stt/openaiSttProtocol.ts` | UNVERIFIED |
+| `turn_detection: null` accepted on the transcription session (client-driven commit) | `src/main/stt/openaiSttProtocol.ts` | UNVERIFIED |
+| `language` (mini / 4o transcribe) vs `languages: [...]` (`gpt-live-transcribe`) | `src/main/stt/openaiSttProtocol.ts` | UNVERIFIED |
+| Translate endpoint accepts or rejects `audio.input.transcription` in the second `session.update`; translation language stays correct in both cases (look for `input_transcription_rejected` in the log) | `src/main/translate/openaiSession.ts` | UNVERIFIED |
+| `session.output_transcript.delta` emitted without extra settings | `src/main/translate/openaiSession.ts` | UNVERIFIED |
+| `reasoning_effort: 'minimal'` accepted by `gpt-5-mini` on `/v1/chat/completions` | `src/main/llm/llmClient.ts` | UNVERIFIED |
+| Ollama with `reasoning_effort: 'none'` (accepted, or the 400 retry without it kicks in) | `src/main/llm/llmClient.ts` | UNVERIFIED |
+| TTS `response_format: 'pcm'` streams 24 kHz s16le mono and `instructions` is accepted by `gpt-4o-mini-tts` | `src/main/tts/ttsService.ts` | UNVERIFIED |
+
+### Pass criteria
+
+- [ ] All checks above done and the verification table filled in
+- [ ] No transcript, typed or suggestion text in `userData/logs/*.jsonl`
+- [ ] typecheck, lint, tests (≥ 400) and build green

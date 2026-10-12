@@ -24,7 +24,14 @@ const PLAIN_PLAYBACK = /^CABLE\s+Input\s*\(VB-?Audio/i;
 const PLAIN_RECORDING = /^CABLE\s+Output\s*\(VB-?Audio/i;
 const ANY_VIRTUAL = /CABLE[-\s]?[AB]|VB-?Audio.*Cable|^CABLE\s+(Input|Output)/i;
 
-export function detectVirtualCables(devices: DeviceInfo[]): DetectionResult {
+export function detectVirtualCables(rawDevices: DeviceInfo[]): DetectionResult {
+  // Chromium on Windows lists 'default'/'communications' pseudo-entries ("Default - CABLE-A
+  // Input (...)") ahead of the concrete endpoints. They follow whatever Windows currently
+  // has as default, so selecting one silently re-routes a direction (or loops CABLE-A back
+  // into the mic) when the user changes the Windows default for the call app.
+  const devices = rawDevices.filter(
+    (d) => d.deviceId !== 'default' && d.deviceId !== 'communications',
+  );
   const findOne = (kind: 'audioinput' | 'audiooutput', re: RegExp): DeviceInfo | undefined =>
     devices.find((d) => d.kind === kind && re.test(d.label));
 

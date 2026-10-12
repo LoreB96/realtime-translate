@@ -322,7 +322,165 @@ describe('OpenAISession', () => {
     }
   });
 
-  it('routes server-side {type:"error"} events to error state without reconnect', () => {
+  it('server-side {type:"error"} events are logged, not latched: session stays active and a later drop reconnects', () => {
+    vi.useFakeTimers();
+    try {
+      const logger = fakeLogger();
+      const session = new OpenAISession({
+        apiKey: 'sk',
+        sourceLang: 'pt',
+        targetLang: 'en',
+        events,
+        wsFactory: fakeFactory,
+        backoff: { baseMs: 50, maxMs: 500, maxAttempts: 5 },
+        logger,
+      });
+      session.start();
+      const ws = FakeWebSocket.instances[0]!;
+      ws.simulateOpen();
+      onState.mockClear();
+
+      ws.simulateMessage({
+        type: 'error',
+        error: { type: 'invalid_request_error', code: 'some_code', message: 'recoverable' },
+      });
+      // Recoverable per docs: no error state, audio keeps flowing.
+      expect(onState).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledWith('server_error_event', {
+        code: 'some_code',
+        type: 'invalid_request_error',
+        message: 'recoverable',
+      });
+      session.appendAudio('chunk');
+      expect(ws.sent.some((s) => s.includes('chunk'))).toBe(true);
+
+      // A later network drop is still recovered.
+      ws.close(1006, 'abnormal');
+      expect(onState).toHaveBeenCalledWith({ kind: 'reconnecting', attempt: 1 });
+      vi.advanceTimersByTime(60);
+      expect(FakeWebSocket.instances).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('exhausted reconnects report the last server error message', () => {
+    vi.useFakeTimers();
+    try {
+      const session = new OpenAISession({
+        apiKey: 'sk',
+        sourceLang: 'pt',
+        targetLang: 'en',
+        events,
+        wsFactory: fakeFactory,
+        backoff: { baseMs: 10, maxMs: 100, maxAttempts: 1 },
+      });
+      session.start();
+      const ws1 = FakeWebSocket.instances[0]!;
+      ws1.simulateOpen();
+      ws1.simulateMessage({ type: 'error', error: { message: 'invalid_session_config' } });
+      ws1.close(1006, 'abnormal'); // attempt 1 scheduled
+      vi.advanceTimersByTime(10);
+      FakeWebSocket.instances[1]!.close(1006, 'abnormal'); // exhausted
+      expect(onState).toHaveBeenLastCalledWith({
+        kind: 'error',
+        message: 'reconnect attempts exhausted: invalid_session_config',
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('open → error → close cycles still exhaust the backoff (no infinite reconnect loop)', () => {
+    vi.useFakeTimers();
+    try {
+      const session = new OpenAISession({
+        apiKey: 'sk',
+        sourceLang: 'pt',
+        targetLang: 'en',
+        events,
+        wsFactory: fakeFactory,
+        backoff: { baseMs: 10, maxMs: 100, maxAttempts: 3 },
+      });
+      session.start();
+      for (let i = 0; i < 10; i++) {
+        const ws = FakeWebSocket.instances[FakeWebSocket.instances.length - 1]!;
+        if (ws.closed) break;
+        ws.simulateOpen();
+        ws.simulateMessage({ type: 'error', error: { code: 'insufficient_quota', message: 'quota' } });
+        ws.close(1000, '');
+        vi.advanceTimersByTime(200);
+      }
+      expect(FakeWebSocket.instances).toHaveLength(4); // initial + 3 attempts
+      expect(onState).toHaveBeenLastCalledWith({
+        kind: 'error',
+        message: 'reconnect attempts exhausted: quota',
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('translated audio after a reconnect clears the stale server error and resets backoff', () => {
+    vi.useFakeTimers();
+    try {
+      const session = new OpenAISession({
+        apiKey: 'sk',
+        sourceLang: 'pt',
+        targetLang: 'en',
+        events,
+        wsFactory: fakeFactory,
+        backoff: { baseMs: 10, maxMs: 100, maxAttempts: 1 },
+      });
+      session.start();
+      const ws1 = FakeWebSocket.instances[0]!;
+      ws1.simulateOpen();
+      ws1.simulateMessage({ type: 'error', error: { message: 'old error' } });
+      ws1.close(1006, '');
+      vi.advanceTimersByTime(20);
+      const ws2 = FakeWebSocket.instances[1]!;
+      ws2.simulateOpen();
+      ws2.simulateMessage({ type: 'session.output_audio.delta', delta: 'ok' });
+      // Healthy again: a later plain drop gets a fresh attempt and no stale message.
+      ws2.close(1006, '');
+      expect(onState).toHaveBeenLastCalledWith({ kind: 'reconnecting', attempt: 1 });
+      vi.advanceTimersByTime(20);
+      FakeWebSocket.instances[2]!.close(1006, '');
+      expect(onState).toHaveBeenLastCalledWith({ kind: 'error', message: 'reconnect attempts exhausted' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('handshake rejected with 401 is fatal: error state, no reconnect', () => {
+    vi.useFakeTimers();
+    try {
+      const session = new OpenAISession({
+        apiKey: 'sk-bad',
+        sourceLang: 'pt',
+        targetLang: 'en',
+        events,
+        wsFactory: fakeFactory,
+        backoff: { baseMs: 50, maxMs: 500, maxAttempts: 5 },
+      });
+      session.start();
+      const ws = FakeWebSocket.instances[0]!;
+      // ws library order on a rejected upgrade: 'error' then close(1006).
+      ws.simulateError(new Error('Unexpected server response: 401'));
+      ws.close(1006, '');
+      vi.advanceTimersByTime(2000);
+      expect(onState).toHaveBeenLastCalledWith({
+        kind: 'error',
+        message: 'Unexpected server response: 401',
+      });
+      expect(onState).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'reconnecting' }));
+      expect(FakeWebSocket.instances).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('transient handshake failure (e.g. 503) still reconnects', () => {
     vi.useFakeTimers();
     try {
       const session = new OpenAISession({
@@ -335,22 +493,32 @@ describe('OpenAISession', () => {
       });
       session.start();
       const ws = FakeWebSocket.instances[0]!;
-      ws.simulateOpen();
-
-      ws.simulateMessage({ type: 'error', error: { message: 'invalid_session_config' } });
-      expect(onState).toHaveBeenCalledWith({ kind: 'error', message: 'invalid_session_config' });
-
-      // Even if the socket then closes, no reconnect is attempted.
-      onState.mockClear();
-      ws.close(1006, 'abnormal');
-      vi.advanceTimersByTime(2000);
-      // No second socket spun up.
-      expect(FakeWebSocket.instances).toHaveLength(1);
-      // No 'reconnecting' state emitted.
-      expect(onState).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'reconnecting' }));
+      ws.simulateError(new Error('Unexpected server response: 503'));
+      ws.close(1006, '');
+      expect(onState).toHaveBeenLastCalledWith({ kind: 'reconnecting', attempt: 1 });
+      vi.advanceTimersByTime(60);
+      expect(FakeWebSocket.instances).toHaveLength(2);
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('stop() while CONNECTING ends idle: the ws abort error and late frames are ignored', () => {
+    const session = new OpenAISession({
+      apiKey: 'sk',
+      sourceLang: 'pt',
+      targetLang: 'en',
+      events,
+      wsFactory: fakeFactory,
+    });
+    session.start();
+    const ws = FakeWebSocket.instances[0]!;
+    session.stop();
+    // ws emits this asynchronously after close() on a CONNECTING socket.
+    ws.simulateError(new Error('WebSocket was closed before the connection was established'));
+    ws.simulateMessage({ type: 'session.output_audio.delta', delta: 'late' });
+    expect(onState).toHaveBeenLastCalledWith({ kind: 'idle' });
+    expect(onAudio).not.toHaveBeenCalled();
   });
 
   it('stop() clears pendingAudio so stale chunks do not leak across sessions', () => {
@@ -540,5 +708,225 @@ describe('OpenAISession', () => {
     ws.simulateOpen();
     ws.simulateMessage({ type: 'session.output_audio.delta', delta: 'unsolicited' });
     expect(onLatency).not.toHaveBeenCalled();
+  });
+
+  // ---------- M6 (U7): optional input transcription ----------
+
+  describe('input transcription option', () => {
+    const todayFrame = (voice?: string) => ({
+      type: 'session.update',
+      session: { audio: { output: { language: 'en', ...(voice ? { voice } : {}) } } },
+    });
+
+    it('without the option: one language update, then the voice in its own update', () => {
+      const session = new OpenAISession({
+        apiKey: 'sk',
+        sourceLang: 'pt',
+        targetLang: 'en',
+        voice: 'cedar',
+        events,
+        wsFactory: fakeFactory,
+      });
+      session.start();
+      const ws = FakeWebSocket.instances[0]!;
+      ws.simulateOpen();
+      expect(ws.sent.map((s) => JSON.parse(s))).toEqual([
+        todayFrame(),
+        todayFrame('cedar'),
+      ]);
+    });
+
+    it('without a voice, exactly one session.update (as before)', () => {
+      const session = new OpenAISession({
+        apiKey: 'sk',
+        sourceLang: 'pt',
+        targetLang: 'en',
+        events,
+        wsFactory: fakeFactory,
+      });
+      session.start();
+      const ws = FakeWebSocket.instances[0]!;
+      ws.simulateOpen();
+      expect(ws.sent.map((s) => JSON.parse(s))).toEqual([todayFrame()]);
+    });
+
+    it('with the option, first frame equals today and the second requests transcription', () => {
+      const session = new OpenAISession({
+        apiKey: 'sk',
+        sourceLang: 'pt',
+        targetLang: 'en',
+        voice: 'cedar',
+        events,
+        wsFactory: fakeFactory,
+        inputTranscriptionModel: 'gpt-realtime-whisper',
+      });
+      session.start();
+      const ws = FakeWebSocket.instances[0]!;
+      ws.simulateOpen();
+      expect(ws.sent).toHaveLength(3);
+      const first = JSON.parse(ws.sent[0]!);
+      const second = JSON.parse(ws.sent[1]!);
+      expect(first).toEqual(todayFrame());
+      expect(second.type).toBe('session.update');
+      expect(second.session.audio.input.transcription.model).toBe('gpt-realtime-whisper');
+      expect(second.session.audio.output).toEqual(first.session.audio.output);
+      expect(JSON.parse(ws.sent[2]!)).toEqual(todayFrame('cedar'));
+    });
+
+    it('a rejected voice is ignored: no state change, not resent after a reconnect', () => {
+      vi.useFakeTimers();
+      try {
+        const onState = vi.fn();
+        const session = new OpenAISession({
+          apiKey: 'sk',
+          sourceLang: 'pt',
+          targetLang: 'en',
+          voice: 'cedar',
+          events: { ...events, onState },
+          wsFactory: fakeFactory,
+        });
+        session.start();
+        const ws = FakeWebSocket.instances[0]!;
+        ws.simulateOpen();
+        onState.mockClear();
+        ws.simulateMessage({
+          type: 'error',
+          error: {
+            type: 'invalid_request_error',
+            param: 'session.audio.output.voice',
+            message: 'Unknown parameter',
+          },
+        });
+        expect(onState).not.toHaveBeenCalled();
+        ws.close(1006, 'drop');
+        vi.advanceTimersByTime(60_000);
+        const ws2 = FakeWebSocket.instances[1]!;
+        ws2.simulateOpen();
+        expect(ws2.sent.map((s) => JSON.parse(s))).toEqual([todayFrame()]);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('a transcription rejection fires the callback once, keeps the backoff reset, and is latched across reconnects', () => {
+      vi.useFakeTimers();
+      try {
+        const logger = fakeLogger();
+        const onRejected = vi.fn();
+        const session = new OpenAISession({
+          apiKey: 'sk',
+          sourceLang: 'pt',
+          targetLang: 'en',
+          events: { ...events, onInputTranscriptionRejected: onRejected },
+          wsFactory: fakeFactory,
+          backoff: { baseMs: 10, maxMs: 100, maxAttempts: 5 },
+          logger,
+          inputTranscriptionModel: 'gpt-realtime-whisper',
+        });
+        session.start();
+        const ws1 = FakeWebSocket.instances[0]!;
+        ws1.simulateOpen();
+        onState.mockClear();
+        const rejection = {
+          type: 'error',
+          error: {
+            type: 'invalid_request_error',
+            code: 'unknown_parameter',
+            param: 'session.audio.input.transcription',
+            message: 'Unknown parameter: secret detail',
+          },
+        };
+        ws1.simulateMessage(rejection);
+        expect(onRejected).toHaveBeenCalledTimes(1);
+        expect(onState).not.toHaveBeenCalled();
+        expect(logger.warn).toHaveBeenCalledWith('input_transcription_rejected', {
+          code: 'unknown_parameter',
+          param: 'session.audio.input.transcription',
+        });
+        // The message never reaches the logger.
+        expect(JSON.stringify(logger.warn.mock.calls)).not.toContain('secret detail');
+
+        // Drop → reconnect: the rejection did not count as a pending server error, so the
+        // successful reopen resets the backoff (next drop starts again at attempt 1).
+        ws1.close(1006, '');
+        expect(onState).toHaveBeenLastCalledWith({ kind: 'reconnecting', attempt: 1 });
+        vi.advanceTimersByTime(10);
+        const ws2 = FakeWebSocket.instances[1]!;
+        ws2.simulateOpen();
+        // Latched: only the translation update is sent after the reconnect.
+        expect(ws2.sent.map((s) => JSON.parse(s))).toEqual([todayFrame()]);
+        ws2.close(1006, '');
+        expect(onState).toHaveBeenLastCalledWith({ kind: 'reconnecting', attempt: 1 });
+        expect(onRejected).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('an unrelated error is handled as today even with the option set', () => {
+      vi.useFakeTimers();
+      try {
+        const logger = fakeLogger();
+        const onRejected = vi.fn();
+        const session = new OpenAISession({
+          apiKey: 'sk',
+          sourceLang: 'pt',
+          targetLang: 'en',
+          events: { ...events, onInputTranscriptionRejected: onRejected },
+          wsFactory: fakeFactory,
+          backoff: { baseMs: 10, maxMs: 100, maxAttempts: 1 },
+          logger,
+          inputTranscriptionModel: 'gpt-realtime-whisper',
+        });
+        session.start();
+        const ws1 = FakeWebSocket.instances[0]!;
+        ws1.simulateOpen();
+        ws1.simulateMessage({
+          type: 'error',
+          error: { type: 'server_error', code: 'insufficient_quota', message: 'quota' },
+        });
+        expect(onRejected).not.toHaveBeenCalled();
+        expect(logger.warn).toHaveBeenCalledWith('server_error_event', {
+          code: 'insufficient_quota',
+          type: 'server_error',
+          message: 'quota',
+        });
+        ws1.close(1006, '');
+        vi.advanceTimersByTime(10);
+        const ws2 = FakeWebSocket.instances[1]!;
+        ws2.simulateOpen();
+        // Not latched: the transcription update is still requested after the reconnect.
+        expect(ws2.sent).toHaveLength(2);
+        ws2.close(1006, '');
+        expect(onState).toHaveBeenLastCalledWith({
+          kind: 'error',
+          message: 'reconnect attempts exhausted: quota',
+        });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('a transcription-looking error without the option is handled as a normal server error', () => {
+      const logger = fakeLogger();
+      const onRejected = vi.fn();
+      const session = new OpenAISession({
+        apiKey: 'sk',
+        sourceLang: 'pt',
+        targetLang: 'en',
+        events: { ...events, onInputTranscriptionRejected: onRejected },
+        wsFactory: fakeFactory,
+        logger,
+      });
+      session.start();
+      const ws = FakeWebSocket.instances[0]!;
+      ws.simulateOpen();
+      ws.simulateMessage({
+        type: 'error',
+        error: { code: 'x', param: 'session.audio.input.transcription', message: 'm' },
+      });
+      expect(onRejected).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledWith('server_error_event', expect.anything());
+    });
   });
 });

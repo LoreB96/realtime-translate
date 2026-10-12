@@ -30,11 +30,20 @@ html, body, #root {
   font-size: 12px;
   -webkit-app-region: drag;
   transition: background 200ms ease-out, border-color 200ms ease-out;
+  /* Never wider than the (fixed-size) window: the health chip and update badge shrink
+     with an ellipsis instead of pushing the buttons off-screen. */
+  box-sizing: border-box;
+  max-width: calc(100vw - 12px);
 }
 
 .rt-bar > * {
   -webkit-app-region: no-drag;
   flex-shrink: 0;
+}
+.rt-bar > .rt-health,
+.rt-bar > .rt-update-badge {
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 /* Background tints per state */
@@ -138,13 +147,222 @@ html, body, #root {
   color: rgba(244, 244, 245, 0.5);
 }
 
-/* Cost tag */
-.rt-cost {
-  font-family: 'Cascadia Code', Consolas, monospace;
-  font-size: 10px;
-  color: rgba(244, 244, 245, 0.4);
-  letter-spacing: 0.02em;
+/* Panel opened downwards (no room above the bar): the bar sits at the top of the window. */
+.rt-root--down .rt-bar {
+  top: 4px;
+  bottom: auto;
 }
+
+/* Service quick toggles (transcript, suggestions, transcript window) */
+.rt-svc-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 6px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+.rt-svc {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(244, 244, 245, 0.45);
+  cursor: pointer;
+}
+.rt-svc:hover { background: rgba(255, 255, 255, 0.06); color: rgba(244, 244, 245, 0.9); }
+.rt-svc:disabled { opacity: 0.35; cursor: not-allowed; }
+.rt-svc svg { width: 13px; height: 13px; }
+.rt-svc--on {
+  color: var(--accent-hover);
+  background: var(--accent-muted);
+  border-color: var(--accent-border);
+}
+
+/* Cost chip: spend so far; opens the services and costs panel */
+.rt-cost-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(244, 244, 245, 0.7);
+  font-family: 'Cascadia Code', Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.rt-cost-chip:hover,
+.rt-cost-chip--open { background: rgba(255, 255, 255, 0.1); color: rgba(244, 244, 245, 0.95); }
+.rt-cost-chip svg { width: 9px; height: 9px; transition: transform 150ms; }
+.rt-cost-chip--open svg { transform: rotate(180deg); }
+.rt-root--down .rt-cost-chip svg { transform: rotate(180deg); }
+.rt-root--down .rt-cost-chip--open svg { transform: none; }
+
+/* Services and costs panel */
+.rt-panel {
+  position: fixed;
+  left: 50%;
+  bottom: 44px;
+  transform: translateX(-50%);
+  width: calc(100vw - 24px);
+  max-height: calc(100vh - 52px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  background: rgba(24, 26, 31, 0.94);
+  -webkit-backdrop-filter: blur(40px) saturate(140%);
+  backdrop-filter: blur(40px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+}
+.rt-root--down .rt-panel { top: 44px; bottom: auto; }
+.rt-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px 8px;
+}
+.rt-panel__title { font-weight: 600; font-size: 12.5px; }
+.rt-panel__since { color: rgba(244, 244, 245, 0.4); font-size: 11px; }
+.rt-panel__icon-btn {
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: rgba(244, 244, 245, 0.5);
+  cursor: pointer;
+}
+.rt-panel__icon-btn:hover { background: rgba(255, 255, 255, 0.06); color: rgba(244, 244, 245, 0.9); }
+.rt-panel__icon-btn svg { width: 13px; height: 13px; }
+.rt-root--down .rt-panel__icon-btn svg { transform: rotate(180deg); }
+.rt-panel__row {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.rt-panel__row--active .rt-panel__name { color: var(--accent-hover); }
+.rt-panel__control { display: flex; justify-content: center; }
+.rt-panel__info { min-width: 0; }
+.rt-panel__name { font-weight: 500; }
+.rt-panel__desc {
+  margin-top: 1px;
+  color: rgba(244, 244, 245, 0.45);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.rt-panel__money { text-align: right; white-space: nowrap; }
+.rt-panel__spent {
+  font-family: 'Cascadia Code', Consolas, monospace;
+  font-size: 12px;
+  color: rgba(244, 244, 245, 0.92);
+}
+.rt-panel__detail,
+.rt-panel__estimate { font-size: 10.5px; color: rgba(244, 244, 245, 0.42); }
+.rt-panel__estimate { color: rgba(244, 244, 245, 0.55); }
+.rt-panel__sub-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -4px 0 4px 80px;
+  font-size: 11px;
+  color: rgba(244, 244, 245, 0.6);
+  cursor: pointer;
+}
+.rt-panel__sub-option input { accent-color: var(--accent); margin: 0; }
+.rt-panel__action {
+  min-width: 56px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-muted);
+  color: rgba(244, 244, 245, 0.95);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.rt-panel__action:hover { background: rgba(110, 127, 196, 0.3); }
+.rt-panel__action--stop {
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.14);
+}
+.rt-panel__action--stop:hover { background: rgba(248, 113, 113, 0.24); }
+.rt-panel__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.rt-panel__total { display: flex; align-items: baseline; gap: 8px; color: rgba(244, 244, 245, 0.6); }
+.rt-panel__total strong {
+  font-family: 'Cascadia Code', Consolas, monospace;
+  font-size: 14px;
+  color: rgba(244, 244, 245, 0.95);
+}
+.rt-panel__badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.14);
+  color: var(--warning);
+}
+.rt-panel__footer-actions { display: flex; gap: 4px; }
+.rt-panel__link {
+  border: 0;
+  background: transparent;
+  color: rgba(244, 244, 245, 0.6);
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.rt-panel__link:hover { background: rgba(255, 255, 255, 0.06); color: rgba(244, 244, 245, 0.95); }
+
+/* On/off switch */
+.rt-switch {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  padding: 0;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: background 150ms;
+}
+.rt-switch:disabled { opacity: 0.4; cursor: not-allowed; }
+.rt-switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(244, 244, 245, 0.75);
+  transition: transform 150ms;
+}
+.rt-switch--on { background: var(--accent); border-color: var(--accent); }
+.rt-switch--on .rt-switch__knob { transform: translateX(14px); background: #fff; }
 
 /* Action button */
 .rt-action {
@@ -182,9 +400,12 @@ html, body, #root {
 }
 .rt-gear:hover { background: rgba(255,255,255,0.06); color: rgba(244, 244, 245, 0.9); }
 .rt-gear svg { width: 12px; height: 12px; }
+.rt-quit:hover { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
 
 /* Update badge */
 .rt-update-badge {
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 10px;
   letter-spacing: 0.02em;
   padding: 2px 8px;
@@ -206,4 +427,54 @@ html, body, #root {
 .rt-update-badge--ready:hover {
   color: var(--accent-hover);
   background: var(--accent-border);
+}
+
+/* Audio-health chip (issue) / direct-mode label */
+.rt-health {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  /* Fits the longest short label ("Chiamata troppo bassa", "Microfono troppo basso");
+     flex-shrink still protects the bar when the cost/latency counters are visible. */
+  max-width: 190px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.rt-health__icon {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}
+.rt-health__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+button.rt-health { cursor: pointer; }
+.rt-health--warning {
+  color: var(--warning);
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.32);
+}
+.rt-health--warning:hover { background: rgba(245, 158, 11, 0.24); }
+.rt-health--error {
+  color: var(--error);
+  background: rgba(248, 113, 113, 0.14);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+.rt-health--error:hover { background: rgba(248, 113, 113, 0.24); }
+.rt-health--direct {
+  color: rgba(244, 244, 245, 0.45);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.06);
+  font-weight: 400;
+  cursor: default;
 }

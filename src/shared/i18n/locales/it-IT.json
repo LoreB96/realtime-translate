@@ -1,0 +1,609 @@
+{
+  "common": {
+    "next": "Avanti →",
+    "back": "← Indietro",
+    "save": "Salva",
+    "saveAndBack": "Salva e torna indietro",
+    "cancel": "Annulla",
+    "close": "Chiudi",
+    "yes": "Sì, l'ho sentito",
+    "no": "Non ho sentito niente",
+    "skip": "Salta",
+    "quit": "Esci dall'app",
+    "copy": "Copia",
+    "copied": "Copiato ✓"
+  },
+  "bar": {
+    "tooltip": {
+      "play": "Avvia la traduzione",
+      "pause": "Metti in pausa la traduzione",
+      "retry": "Riprova",
+      "settings": "Impostazioni",
+      "quit": "Esci",
+      "transcribeOff": "Trascrizione spenta: clicca per trascrivere la chiamata quando non traduci",
+      "transcribeOn": "Trascrizione attiva (OpenAI): clicca per spegnerla",
+      "transcribeIncluded": "Mentre traduci la trascrizione è già inclusa, senza costi extra",
+      "transcribeNoKey": "Per trascrivere serve la chiave API OpenAI",
+      "suggestOff": "Suggerimenti di risposta spenti: clicca per attivarli",
+      "suggestOn": "Suggerimenti di risposta attivi: clicca per spegnerli",
+      "transcript": "Apri la trascrizione (leggi, scrivi e fai parlare, suggerimenti)",
+      "costs": "Servizi e costi"
+    },
+    "status": {
+      "connecting": "Connessione…",
+      "reconnecting": "Riconnessione",
+      "attempt": "tentativo {{n}}",
+      "errorPrefix": "Errore:"
+    },
+    "health": {
+      "direct": "Audio diretto",
+      "directTooltip": "Modalità diretta: senti la chiamata e la chiamata sente te, senza traduzione. Premi ▶ per iniziare a tradurre.",
+      "clickForHelp": "Clicca per aprire Risoluzione problemi."
+    }
+  },
+  "menu": {
+    "settings": "Impostazioni",
+    "troubleshoot": "Risoluzione problemi",
+    "quit": "Esci",
+    "transcript": "Trascrizione live"
+  },
+  "health": {
+    "short": {
+      "device-missing": {
+        "mic": "Microfono scollegato",
+        "toCall": "CABLE-A assente",
+        "fromCall": "CABLE-B assente",
+        "headset": "Cuffie scollegate"
+      },
+      "device-failed": {
+        "mic": "Microfono non funziona",
+        "toCall": "Errore CABLE-A",
+        "fromCall": "Errore CABLE-B",
+        "headset": "Errore cuffie"
+      },
+      "mic-silent": "Microfono forse muto",
+      "call-silent": "Chiamata muta",
+      "audio-suspended": "Audio in pausa",
+      "mic-quiet": "Microfono troppo basso",
+      "call-quiet": "Chiamata troppo bassa"
+    },
+    "fix": {
+      "device-missing": {
+        "mic": "Il microfono non è più collegato. Ricollegalo (o riconnetti le cuffie Bluetooth): l'app si riaggancia da sola. Se ora usi un altro microfono, selezionalo in Impostazioni → Dispositivi.",
+        "toCall": "CABLE-A Input (il cavo virtuale che porta la tua voce nella chiamata) è sparito. Reinstalla o riattiva VB-CABLE A+B, riavvia il PC e poi premi Rileva di nuovo in Impostazioni → VB-CABLE A · B.",
+        "fromCall": "CABLE-B Output (il cavo virtuale che porta la chiamata nell'app) è sparito. Reinstalla o riattiva VB-CABLE A+B, riavvia il PC e poi premi Rileva di nuovo in Impostazioni → VB-CABLE A · B.",
+        "headset": "Le cuffie o gli altoparlanti non sono più collegati. Ricollegali: l'app si riaggancia da sola. Se ora usi un altro dispositivo, selezionalo in Impostazioni → Dispositivi."
+      },
+      "device-failed": {
+        "mic": "L'app non riesce ad aprire il microfono. Chiudi le altre app che potrebbero usarlo e controlla Impostazioni di Windows → Privacy e sicurezza → Microfono (consenti alle app desktop). L'app riprova da sola; se non si riprende, scollega e ricollega il microfono, oppure ferma e riavvia la traduzione se è attiva.",
+        "toCall": "L'app non riesce a riprodurre su CABLE-A Input. Nelle impostazioni Audio di Windows controlla che il cavo sia attivo. L'app riprova da sola; se non si riprende, ferma e riavvia la traduzione (se è attiva) oppure riavvia il PC.",
+        "fromCall": "L'app non riesce a registrare da CABLE-B Output. Nelle impostazioni Audio di Windows → Registrazione controlla che sia attivo e non usato in modo esclusivo da un'altra app. L'app riprova da sola; se non si riprende, ferma e riavvia la traduzione (se è attiva) oppure riavvia il PC.",
+        "headset": "L'app non riesce a riprodurre sulle cuffie. Controlla che siano accese e collegate (scollegale e ricollegale), oppure selezionale di nuovo in Impostazioni → Dispositivi. L'app riprova da sola; se non si riprende, ferma e riavvia la traduzione se è attiva."
+      },
+      "mic-silent": "Da quando è partita la traduzione il microfono ha inviato solo silenzio assoluto: potrebbe essere disattivato. Riattivalo (tasto mute delle cuffie, tasto microfono della tastiera o Impostazioni di Windows → Sistema → Audio → Volume di ingresso) e controlla che sia selezionato il microfono giusto in Impostazioni → Dispositivi. Se semplicemente non hai ancora parlato, ignora l'avviso: sparisce appena parli.",
+      "call-silent": "Da quando è partita la traduzione non è arrivato nulla dall'app di chiamata. Nelle impostazioni audio di Meet, Teams o Zoom imposta Altoparlanti su \"{{speaker}}\". Controlla anche che la scheda della riunione non sia silenziata. Se l'altra persona non ha ancora parlato, l'avviso sparisce appena parla.",
+      "audio-suspended": "Windows ha messo in pausa l'audio dell'app (spesso dopo la sospensione o un cambio di dispositivo). L'app prova a riprenderlo da sola; se non ci riesce, ferma e riavvia la traduzione (se è attiva) oppure chiudi e riapri l'app.",
+      "mic-quiet": "La tua voce arriva all'app, ma troppo bassa per essere tradotta. Alza il volume di ingresso del microfono in Impostazioni di Windows → Sistema → Audio → Input (70–100%), avvicinati al microfono e controlla che in Impostazioni → Dispositivi sia selezionato il microfono giusto.",
+      "call-quiet": "L'audio della chiamata arriva all'app, ma troppo basso per essere tradotto. Porta al 100% il volume dell'app di chiamata (e Chrome/Edge o l'app di chiamata nel Mixer volume di Windows) e il livello di CABLE-B Input in Impostazioni Audio di Windows → Riproduzione → Proprietà → Livelli."
+    }
+  },
+  "setup": {
+    "stepLabel": "Passo {{n}} di {{total}}",
+    "title": {
+      "suffix": "Configurazione"
+    },
+    "welcome": {
+      "label": "Benvenuto",
+      "heading": "Configuriamo tutto in circa 5 minuti",
+      "sub": "Realtime Translate traduce in tempo reale le tue chiamate (Google Meet, Microsoft Teams, Zoom). Ecco come funziona:",
+      "diagramDirA": "Tu parli in portoghese, il tuo interlocutore sente in inglese",
+      "diagramDirB": "Il tuo interlocutore parla in inglese, tu senti in portoghese",
+      "you": "Tu",
+      "them": "Interlocutore",
+      "appTranslates": "l'app traduce",
+      "speaks": "Parla",
+      "hears": "Sente",
+      "start": "Inizia →"
+    },
+    "key": {
+      "label": "Chiave OpenAI",
+      "heading": "La tua chiave OpenAI",
+      "sub": "Ogni utente usa la propria chiave. Costo: circa 0,30 $ ogni 5 minuti di conversazione.",
+      "placeholder": "sk-proj-...",
+      "invalidPrefix": "La chiave deve iniziare con 'sk-'",
+      "savedHint": "Salvata: ●●●●{{last4}}",
+      "signupLink": "Non ho una chiave — portami alla registrazione OpenAI",
+      "howToToggle": "Come ottengo una chiave?",
+      "saveError": "Impossibile salvare la chiave: {{message}}",
+      "howToStep1": "Crea un account su platform.openai.com",
+      "howToStep2": "Configura la fatturazione (Settings → Billing)",
+      "howToStep3": "Crea una API key (API Keys → Create new secret key)"
+    },
+    "cables": {
+      "label": "Cavi virtuali",
+      "detecting": "Rilevamento…",
+      "detectedHeading": "VB-CABLE A+B rilevati ✓",
+      "detectedSub": "Pronto a instradare l'audio tra te e l'app di chiamata.",
+      "missingHeading": "Devi installare VB-CABLE A+B",
+      "missingSub": "È una coppia di cavi audio virtuali. Software di terze parti (donationware), sicuro e molto diffuso.",
+      "downloadButton": "Scarica VB-CABLE A+B",
+      "rescanButton": "L'ho installato, rileva di nuovo",
+      "howToToggle": "Come si installa?",
+      "rescanFailToast": "Non rilevato. Hai riavviato il PC dopo l'installazione?",
+      "installStep1": "Scarica lo ZIP dal sito VB-Audio",
+      "installStep2": "Estrai il contenuto in una cartella",
+      "installStep3": "Esegui VBCABLE_Setup_x64.exe come amministratore",
+      "installStep4": "Riavvia il PC dopo l'installazione"
+    },
+    "devices": {
+      "label": "Dispositivi",
+      "heading": "I tuoi dispositivi audio",
+      "sub": "Scegli quale microfono e quali cuffie usi.",
+      "mic": "Microfono (la tua voce)",
+      "micHint": "Il tuo microfono fisico — dove viene catturata la tua voce prima della traduzione.",
+      "toMeet": "Uscita verso la chiamata",
+      "toMeetHint": "Dove l'app invia l'audio tradotto; l'app di chiamata lo usa come microfono. Deve essere CABLE-A (consigliato sotto).",
+      "fromMeet": "Acquisizione dalla chiamata",
+      "fromMeetHint": "Da dove l'app cattura la voce dell'interlocutore (che arriva dall'app di chiamata). Deve essere CABLE-B (consigliato sotto).",
+      "headset": "Cuffie (senti la traduzione)",
+      "headsetHint": "Dove senti la traduzione dell'interlocutore. Se possibile usa delle cuffie separate — evita il ritorno nel microfono.",
+      "languagesLabel": "Lingue (tu ↔ interlocutore)",
+      "recommended": "(consigliato)",
+      "selectPlaceholder": "— seleziona —",
+      "staleCableWarning": "Le tue scelte di Uscita/Acquisizione non usano i dispositivi VB-CABLE consigliati. Il test di traduzione potrebbe fallire.",
+      "useRecommended": "Usa i consigliati"
+    },
+    "meet": {
+      "label": "Configura l'app di chiamata",
+      "heading": "Configura la tua app di chiamata",
+      "sub": "Questo passo è manuale — non possiamo verificarlo automaticamente, ma è veloce. Le immagini mostrano Google Meet; Teams e Zoom usano le stesse due impostazioni.",
+      "alreadyConfigured": "L'ho configurata",
+      "step1": "Apri una riunione qualsiasi in Meet",
+      "step2": "Clicca sui 3 puntini in basso a destra → Impostazioni",
+      "step3": "Vai alla scheda 'Audio'",
+      "step4": "Microfono: seleziona '{{mic}}'",
+      "step5": "Altoparlanti: seleziona '{{speaker}}' (NON quello '16ch')",
+      "devicesHeading": "Nomi esatti da selezionare nell'app di chiamata",
+      "noiseWarning": "DISATTIVA la cancellazione del rumore nell'app di chiamata (in Meet: Impostazioni → Audio → Cancellazione del rumore e Audio adattivo). Tratta la voce tradotta come rumore e la taglia.",
+      "otherApps": "Usi Microsoft Teams o Zoom? Usa lo stesso abbinamento: Microfono = CABLE-A Output, Altoparlanti = CABLE-B Input.",
+      "otherAppsButton": "Guide per Teams, Zoom e Windows"
+    },
+    "test": {
+      "label": "Prova la traduzione",
+      "heading": "Prova la traduzione",
+      "sub": "Verifichiamo che tutto funzioni con 2 brevi chiamate a OpenAI (circa 0,10 $ in totale). Puoi saltare se preferisci.",
+      "directionA": "Direzione A (PT → EN)",
+      "directionAExplain": "L'app pronuncerà una frase in portoghese, la tradurrà in inglese e verificherà che il cavo la riceva.",
+      "directionB": "Direzione B (EN → PT)",
+      "directionBExplain": "L'app pronuncerà una frase in inglese, la tradurrà in portoghese e la riprodurrà nelle tue cuffie.",
+      "runTestA": "Prova PT → EN",
+      "runTestB": "Prova EN → PT",
+      "running": "Prova in corso…",
+      "passed": "✓ Superato",
+      "failed": "✗ Non riuscito: {{reason}}",
+      "skipWarning": "Se qualcosa non è configurato bene, la traduzione potrebbe fallire alla prima chiamata.",
+      "skip": "Salta e apri la barra",
+      "finish": "Termina la configurazione →",
+      "cableANotDetected": "Lato di registrazione di CABLE-A non rilevato",
+      "noAudioOnCableA": "Nessun audio rilevato su CABLE-A Output",
+      "openaiNoAudio": "OpenAI non ha restituito audio tradotto. Controlla chiave/credito e la lingua di partenza.",
+      "noLoopbackDespiteAudio": "L'audio è stato inviato ma non è tornato attraverso CABLE-A. Verifica che 'Uscita verso la chiamata' sia impostata su CABLE-A Input.",
+      "confirmHeardPt": "Hai sentito una frase in portoghese nelle cuffie?",
+      "userNoAudio": "Audio non confermato dall'utente"
+    }
+  },
+  "review": {
+    "heading": "Impostazioni",
+    "sub": "È tutto configurato. Modifica ciò che serve — cliccando 'Modifica' si apre il passo corrispondente della configurazione guidata.",
+    "section": {
+      "key": "Chiave API OpenAI",
+      "keyValue": "●●●●{{last4}} · safeStorage",
+      "keyMissing": "Non configurata",
+      "cables": "VB-CABLE A · B",
+      "cablesOk": "Rilevati — pronti a instradare l'audio",
+      "cablesMissing": "Non rilevati — installali e rileva di nuovo",
+      "languages": "Lingue",
+      "devices": "Dispositivi",
+      "devicesValue": "Microfono: {{mic}} · Uscita verso la chiamata: {{toMeet}} · Acquisizione dalla chiamata: {{fromMeet}} · Cuffie: {{headset}}",
+      "meet": "Configura l'app di chiamata",
+      "meetValue": "Microfono = CABLE-A Output · Altoparlanti = CABLE-B Input · non possiamo verificarlo automaticamente — esegui il controllo audio",
+      "edit": "Modifica",
+      "rescan": "Rileva di nuovo",
+      "viewGuide": "Vedi guida",
+      "troubleshoot": "Risoluzione problemi e controllo audio",
+      "troubleshootOk": "Controllo audio e guide passo passo per Meet, Teams, Zoom e Windows",
+      "troubleshootIssues": "Problemi rilevati: {{n}} — apri per vedere come risolverli",
+      "open": "Apri",
+      "assistant": "Assistente: trascrizione, IA, voce",
+      "assistantValue": "Trascrizione: {{stt}} · IA: {{llm}}"
+    },
+    "footer": {
+      "test": "Prova la traduzione",
+      "quit": "Esci dall'app",
+      "close": "Chiudi"
+    }
+  },
+  "trouble": {
+    "heading": "Risoluzione problemi",
+    "sub": "Se qualcosa non funziona, parti da qui: esegui il controllo audio, leggi i problemi rilevati in questo momento e segui la guida della tua app di chiamata.",
+    "back": "← Indietro",
+    "check": {
+      "heading": "Controllo audio",
+      "intro": "Verifica in pochi secondi ogni dispositivo e i due cavi virtuali. La traduzione deve essere ferma. Attenzione: un breve tono di prova a basso volume viene inviato nella chiamata tramite CABLE-A e un altro suona nelle tue cuffie — se sei in riunione, disattiva prima il tuo microfono nell'app di chiamata.",
+      "during": "Durante il controllo: parla nel microfono e, nell'app di chiamata, premi 'Prova altoparlanti' (oppure lascia parlare l'altra persona).",
+      "run": "Esegui controllo audio",
+      "again": "Esegui di nuovo",
+      "running": "Controllo in corso… continua a parlare",
+      "busy": "Prima ferma la traduzione (pulsante ■ sulla barra), poi esegui di nuovo il controllo.",
+      "failed": "Impossibile eseguire il controllo: {{message}}. Chiudi questa finestra, riapri Risoluzione problemi e riprova.",
+      "allPass": "Funziona tutto. Se l'altra persona non ti sente ancora, controlla le impostazioni dell'app di chiamata nelle guide qui sotto.",
+      "finishedAt": "Ultimo controllo: {{time}}",
+      "level": "Livello: {{db}} dB",
+      "skippedHint": "Non eseguito: un controllo precedente è fallito o manca un'impostazione.",
+      "status": {
+        "pass": "OK",
+        "warn": "Da verificare",
+        "fail": "Problema",
+        "skipped": "Saltato"
+      }
+    },
+    "diag": {
+      "api-key": {
+        "title": "Chiave OpenAI salvata",
+        "fix": "Non c'è nessuna chiave OpenAI salvata. Apri Impostazioni → Chiave API OpenAI e incolla la tua chiave (inizia con sk-)."
+      },
+      "devices-saved": {
+        "title": "Dispositivi selezionati",
+        "fix": "Non tutti e quattro i dispositivi sono selezionati. Apri Impostazioni → Dispositivi e scegli microfono, uscita verso la chiamata, acquisizione dalla chiamata e cuffie."
+      },
+      "mic-present": {
+        "title": "Microfono collegato",
+        "fix": "Il microfono selezionato non è collegato. Collegalo, oppure scegline un altro in Impostazioni → Dispositivi."
+      },
+      "mic-signal": {
+        "title": "La tua voce arriva all'app",
+        "fix": "Il microfono è muto o troppo basso per la traduzione. Parla durante il controllo, riattiva il microfono, alza il volume di ingresso in Impostazioni di Windows → Sistema → Audio → Input (70–100%) e controlla che in Impostazioni → Dispositivi sia selezionato il microfono giusto."
+      },
+      "to-call-present": {
+        "title": "CABLE-A Input presente",
+        "fix": "CABLE-A Input non è stato trovato. Installa VB-CABLE A+B, riavvia il PC e scegli CABLE-A Input come 'Uscita verso la chiamata' in Impostazioni → Dispositivi."
+      },
+      "cable-a-loopback": {
+        "title": "CABLE-A porta la tua voce nella chiamata",
+        "fix": "Un suono di prova riprodotto su CABLE-A Input non è uscito da CABLE-A Output. Nelle impostazioni Audio di Windows → Registrazione attiva CABLE-A Output e controlla che non sia disattivato; imposta tutti i dispositivi CABLE a 48000 Hz; se serve, riavvia il PC."
+      },
+      "from-call-present": {
+        "title": "CABLE-B Output presente",
+        "fix": "CABLE-B Output non è stato trovato. Installa VB-CABLE A+B, riavvia il PC e scegli CABLE-B Output come 'Acquisizione dalla chiamata' in Impostazioni → Dispositivi."
+      },
+      "call-signal": {
+        "title": "Arriva il suono dall'app di chiamata",
+        "fix": "Dall'app di chiamata non è arrivato alcun suono, o troppo poco. Nell'app di chiamata imposta Altoparlanti su \"{{speaker}}\" e il volume al 100%; nel Mixer volume di Windows porta Chrome/Edge (o l'app di chiamata) al 100% e in Impostazioni Audio di Windows → Riproduzione porta il livello di CABLE-B Input al 100%. Poi esegui di nuovo il controllo e, mentre è in corso, premi 'Prova altoparlanti' (oppure lascia parlare l'altra persona)."
+      },
+      "headset-present": {
+        "title": "Cuffie collegate",
+        "fix": "Le cuffie selezionate non sono collegate. Collegale o accendile, oppure scegline altre in Impostazioni → Dispositivi."
+      },
+      "headset-tone": {
+        "title": "Tono di prova nelle cuffie",
+        "fix": "Non è stato possibile riprodurre il tono di prova nelle cuffie. Controlla che siano accese e collegate, alza il volume e selezionale di nuovo in Impostazioni → Dispositivi."
+      }
+    },
+    "live": {
+      "heading": "Problemi in questo momento",
+      "none": "Nessun problema rilevato in questo momento.",
+      "since": "dalle {{time}}",
+      "mode": {
+        "off": "L'audio al momento è spento (la finestra delle impostazioni è aperta o l'app si sta avviando).",
+        "passthrough": "Modalità diretta: la chiamata passa senza traduzione. Premi ▶ sulla barra per tradurre.",
+        "translating": "La traduzione è attiva."
+      }
+    },
+    "guides": {
+      "heading": "Guide passo passo",
+      "devicesIntro": "Questi sono i nomi esatti da selezionare nella tua app di chiamata:",
+      "micLabel": "Microfono",
+      "speakerLabel": "Altoparlanti",
+      "meet": {
+        "title": "Google Meet (Chrome / Edge)",
+        "step1": "Nella riunione clicca ⋮ (Altre opzioni) → Impostazioni → Audio.",
+        "step2": "Microfono: seleziona \"{{mic}}\".",
+        "step3": "Altoparlanti: seleziona \"{{speaker}}\" (non quello con \"16ch\").",
+        "step4": "DISATTIVA \"Cancellazione del rumore\" e \"Audio adattivo\": trattano la voce tradotta come rumore e la tagliano.",
+        "step5": "Controlla che la scheda di Meet non sia silenziata (clic destro sulla scheda) e che il sito possa usare il microfono (lucchetto nella barra degli indirizzi → Microfono: Consenti).",
+        "step6": "Ricontrolla queste impostazioni dopo ogni riavvio del browser: Chrome ed Edge possono tornare da soli su \"Predefinito\"."
+      },
+      "teams": {
+        "title": "Microsoft Teams",
+        "step1": "Apri Impostazioni (… accanto alla foto del profilo) → Dispositivi → Dispositivi audio e scegli \"Configurazione personalizzata\".",
+        "step2": "Altoparlante: \"{{speaker}}\".",
+        "step3": "Microfono: \"{{mic}}\".",
+        "step4": "Eliminazione del rumore: Disattivata (o Bassa).",
+        "step5": "Durante una riunione controlla in … → Impostazioni → Impostazioni dispositivo che siano ancora selezionati gli stessi dispositivi."
+      },
+      "zoom": {
+        "title": "Zoom",
+        "step1": "Apri Zoom → Impostazioni (icona a ingranaggio) → Audio.",
+        "step2": "Altoparlante: \"{{speaker}}\".",
+        "step3": "Microfono: \"{{mic}}\".",
+        "step4": "Togli la spunta a \"Regola automaticamente il volume del microfono\".",
+        "step5": "Soppressione del rumore di fondo: Bassa o Disattivata — oppure abilita \"Suono originale per musicisti\" e attivalo nella riunione."
+      },
+      "windows": {
+        "title": "Impostazioni audio di Windows",
+        "step1": "Non impostare mai un dispositivo CABLE come predefinito di Windows o come dispositivo di comunicazione predefinito: microfono e cuffie reali devono restare i predefiniti.",
+        "step2": "Pannello di controllo Audio → scheda Comunicazioni → scegli \"Nessuna azione\", così Windows non abbassa il volume durante le chiamate.",
+        "step3": "Tutti i dispositivi CABLE (schede Riproduzione e Registrazione) devono usare lo stesso formato: Proprietà → Avanzate → 48000 Hz.",
+        "step4": "Nella stessa scheda Avanzate togli la spunta a \"Consenti alle applicazioni di assumere il controllo esclusivo del dispositivo\" per ogni dispositivo CABLE.",
+        "step5": "Cuffie Bluetooth: preferisci cuffie con filo o USB. Con il Bluetooth seleziona i dispositivi \"Hands-Free\" sia per il microfono sia per le cuffie.",
+        "step6": "Se l'audio gracchia o va a scatti: apri il pannello di controllo di VB-CABLE e aumenta \"Max Latency\"."
+      }
+    },
+    "faq": {
+      "heading": "Domande frequenti",
+      "phantom": {
+        "q": "Sento frasi come \"I'm ready, let's talk\" che nessuno ha detto",
+        "a": "Il traduttore ha ricevuto solo silenzio e si è inventato una frase. L'app di chiamata non sta inviando audio a CABLE-B: imposta i suoi Altoparlanti su \"{{speaker}}\" ed esegui il controllo audio."
+      },
+      "notHeard": {
+        "q": "Nessuno mi sente (o mi sentono a tratti)",
+        "a": "Il microfono dell'app di chiamata non è \"{{mic}}\", oppure la cancellazione del rumore sta eliminando la voce tradotta. Correggi il microfono nell'app di chiamata e disattiva la cancellazione del rumore."
+      },
+      "echo": {
+        "q": "L'altra persona sente l'eco",
+        "a": "Il suono degli altoparlanti rientra nel microfono. Usa le cuffie invece degli altoparlanti e tieni il volume moderato."
+      },
+      "direct": {
+        "q": "Prima di premere play sento la chiamata non tradotta",
+        "a": "È la modalità diretta ed è voluta: quando la traduzione è spenta, l'app fa passare la tua voce e la chiamata senza modifiche, così non resti mai senza audio. Premi ▶ sulla barra per tradurre. Se per 10 minuti nessuno parla da entrambe le parti, l'app rilascia il microfono (le cuffie Bluetooth tornano alla qualità piena) e lo riapre appena arriva audio dalla chiamata."
+      }
+    }
+  },
+  "update": {
+    "available": "Download v{{version}}…",
+    "ready": "Riavvia per aggiornare alla v{{version}}",
+    "tooltipAvailable": "Aggiornamento v{{version}} in download in background",
+    "tooltipReady": "Clicca per riavviare e applicare l'aggiornamento"
+  },
+  "transcript": {
+    "title": "Trascrizione live",
+    "status": {
+      "translating": "Traduzione in corso — trascrizione ricavata dalla traduzione",
+      "sttOpenai": "Audio diretto — trascrizione con OpenAI",
+      "off": "La trascrizione è spenta quando non stai traducendo",
+      "error": "Problema con la trascrizione — controlla le impostazioni dell'Assistente",
+      "retry": "Riprova"
+    },
+    "cta": {
+      "title": "Attiva la trascrizione per seguire la chiamata anche quando non stai traducendo.",
+      "openai": "Trascrivi con OpenAI",
+      "hint": "Circa 0,003 $ al minuto di parlato; il silenzio non viene inviato."
+    },
+    "speaker": {
+      "me": "Io",
+      "them": "Altri"
+    },
+    "empty": "Ancora niente. Quello che si dice in chiamata comparirà qui.",
+    "jumpToLatest": "Vai all'ultimo",
+    "pin": "Tieni in primo piano",
+    "unpin": "Non tenere in primo piano",
+    "menu": {
+      "more": "Altro",
+      "clear": "Cancella trascrizione",
+      "clearConfirm": "Cancella",
+      "exportTxt": "Esporta come testo",
+      "exportMd": "Esporta come Markdown",
+      "settings": "Impostazioni Assistente"
+    },
+    "confirmClear": "Cancellare tutta la trascrizione? L'operazione non si può annullare.",
+    "typed": "Scritto",
+    "speak": {
+      "queued": "In attesa…",
+      "translating": "Traduzione…",
+      "synthesizing": "Preparazione voce…",
+      "speaking": "In riproduzione…",
+      "done": "Pronunciato",
+      "error": "Impossibile pronunciarlo",
+      "cancelled": "Interrotto",
+      "retry": "Riprova"
+    },
+    "composer": {
+      "placeholder": "Scrivi quello che vuoi dire…",
+      "send": "Pronuncia",
+      "stop": "Ferma",
+      "translate": "Traduci in {{lang}} prima di pronunciare",
+      "charCount": "{{n}}/{{max}}",
+      "noKey": "Per far parlare il testo scritto serve una chiave API OpenAI.",
+      "noDevice": "Prima scegli il dispositivo “Uscita verso la chiamata” nelle Impostazioni.",
+      "setupBusy": "Chiudi le schermate di configurazione per parlare nella chiamata."
+    },
+    "suggestions": {
+      "title": "Risposte suggerite",
+      "suggest": "Suggerisci",
+      "loading": "Sto pensando…",
+      "empty": "Nessun suggerimento al momento.",
+      "needsStt": "Attiva la trascrizione così i suggerimenti seguono la chiamata anche quando non stai traducendo.",
+      "speak": "Pronuncia",
+      "edit": "Modifica",
+      "hide": "Nascondi",
+      "show": "Mostra"
+    },
+    "export": {
+      "header": "Trascrizione — {{date}}"
+    }
+  },
+  "assistant": {
+    "heading": "Assistente",
+    "sub": "Trascrizione live, testo pronunciato e risposte suggerite.",
+    "stt": {
+      "title": "Trascrizione live",
+      "engine": "Trascrizione quando non stai traducendo",
+      "off": "Spenta",
+      "openai": "OpenAI (cloud)",
+      "openaiModel": "Modello OpenAI",
+      "costOpenai": "Addebitata a minuto di parlato; il silenzio non viene inviato.",
+      "inputTranscript": "Trascrivi anche il parlato originale durante la traduzione",
+      "inputTranscriptHint": "Può costare circa 0,017 $ in più al minuto per ciascuna direzione. Vale dal prossimo Avvio.",
+      "theirSpeech": "Traduci quello che dice l'altra persona quando non stai traducendo",
+      "theirSpeechHint": "Usa il modello IA qui sotto, una breve richiesta per frase.",
+      "openOnLaunch": "Apri la finestra della trascrizione all'avvio dell'app",
+      "openNow": "Apri trascrizione",
+      "retry": "Riprova",
+      "state": {
+        "off": "Spenta",
+        "listening": "In ascolto",
+        "error": "Errore"
+      }
+    },
+    "llm": {
+      "title": "Modello IA",
+      "preset": "Fornitore",
+      "openai": "OpenAI",
+      "ollama": "Ollama",
+      "lmstudio": "LM Studio",
+      "custom": "Personalizzato",
+      "baseUrl": "Indirizzo del server (URL base)",
+      "model": "Modello",
+      "loadModels": "Carica modelli",
+      "modelsEmpty": "Il server non ha restituito nessun modello.",
+      "modelsFailed": "Impossibile caricare l'elenco dei modelli.",
+      "reasoning": "Livello di ragionamento",
+      "reasoningDefault": "Predefinito del server",
+      "reasoningHint": "Lascia “Predefinito del server” se il tuo modello non lo supporta.",
+      "apiKey": "Chiave API (facoltativa)",
+      "apiKeyHint": "Salvata cifrata su questo PC. La tua chiave OpenAI non viene mai inviata ad altri server.",
+      "apiKeySaved": "Chiave salvata ●●●●{{last4}}",
+      "apiKeySave": "Salva chiave",
+      "apiKeyClear": "Rimuovi chiave",
+      "openaiKeyUsed": "Usa la tua chiave API OpenAI.",
+      "test": "Prova connessione",
+      "testOk": "Connesso — {{ms}} ms",
+      "hintOllama": "Ollama è in esecuzione? Avvialo, poi esegui “ollama pull {{model}}”.",
+      "cost": "OpenAI: circa 0,001–0,004 $ per suggerimento. I modelli locali sono gratuiti.",
+      "insecureWarn": "Questo indirizzo non è cifrato: le trascrizioni viaggerebbero in rete in chiaro."
+    },
+    "tts": {
+      "title": "Voce per i messaggi scritti",
+      "voice": "Voce",
+      "monitor": "Riproduci anche nelle mie cuffie",
+      "monitorWarn": "Solo con le cuffie — con gli altoparlanti il microfono lo riprende e la chiamata lo sente due volte.",
+      "cost": "Usa la sintesi vocale di OpenAI: un messaggio breve costa una frazione di centesimo."
+    },
+    "suggest": {
+      "title": "Risposte suggerite",
+      "enabled": "Mostra risposte suggerite",
+      "auto": "Suggerisci automaticamente quando l'altra persona finisce di parlare",
+      "hint": "Usa il modello IA qui sopra, a cui viene inviata la trascrizione recente."
+    },
+    "errors": {
+      "no-openai-key": "Serve una chiave API OpenAI.",
+      "llm-unreachable": "Impossibile raggiungere il server IA. Se usi Ollama o LM Studio, verifica che sia in esecuzione.",
+      "llm-auth": "Il server IA ha rifiutato la chiave API.",
+      "llm-model-missing": "Modello non trovato sul server IA. Scegli o scarica un modello.",
+      "llm-timeout": "Il server IA ci ha messo troppo a rispondere.",
+      "llm-bad-response": "Impossibile leggere la risposta dell'IA.",
+      "llm-truncated": "La risposta dell'IA è stata troncata. Prova un livello di ragionamento più basso.",
+      "tts-failed": "Impossibile generare la voce.",
+      "tts-no-device": "Nessun dispositivo “Uscita verso la chiamata” configurato.",
+      "tts-busy-setup": "Le schermate di configurazione stanno usando i dispositivi audio. Chiudile e riprova.",
+      "stt-failed": "Errore del servizio di trascrizione.",
+      "input-transcript-unsupported": "Il servizio di traduzione non ha accettato la trascrizione del parlato originale. La traduzione continua normalmente.",
+      "rate-limited": "Troppe richieste — aspetta un momento e riprova.",
+      "unknown": "Qualcosa è andato storto."
+    }
+  },
+  "panel": {
+    "title": "Servizi e costi",
+    "since": "dalle {{time}}",
+    "reset": "Azzera",
+    "resetTitle": "Azzera il conteggio della spesa",
+    "total": "Spesa stimata",
+    "totalHint": "Stima calcolata sui prezzi OpenAI: il valore esatto è nella dashboard di OpenAI.",
+    "estimated": "stima",
+    "settings": "Impostazioni",
+    "close": "Chiudi",
+    "free": "Gratis",
+    "perHour": "~{{usd}}/ora",
+    "upToPerHour": "max {{usd}}/ora",
+    "perMin": "~{{usd}} al minuto parlato",
+    "minutes": "{{n}} min",
+    "calls": "{{n}} richieste",
+    "noKey": "Serve la chiave OpenAI",
+    "localModel": "modello locale",
+    "translate": {
+      "name": "Traduzione",
+      "desc": "Traduce dal vivo entrambi i lati della chiamata",
+      "start": "Avvia",
+      "stop": "Ferma"
+    },
+    "transcribe": {
+      "name": "Trascrizione",
+      "desc": "Testo della chiamata quando non traduci (traducendo è già incluso)"
+    },
+    "suggest": {
+      "name": "Suggerimenti di risposta",
+      "desc": "L'IA propone cosa rispondere",
+      "auto": "Automatici"
+    },
+    "voice": {
+      "name": "Testo → voce",
+      "desc": "Scrivi un messaggio e l'app lo dice nella chiamata",
+      "open": "Scrivi"
+    }
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "close": "Chiudi",
+    "wizard": "Rifai la configurazione guidata",
+    "group": {
+      "call": "Chiamata",
+      "assistant": "Assistente",
+      "help": "Aiuto"
+    },
+    "nav": {
+      "general": "Generale",
+      "audio": "Audio e dispositivi",
+      "test": "Prova la traduzione",
+      "transcription": "Trascrizione",
+      "ai": "Modello IA",
+      "voice": "Voce",
+      "suggestions": "Suggerimenti",
+      "troubleshoot": "Problemi audio"
+    },
+    "sub": {
+      "general": "Lingue della chiamata e chiave OpenAI.",
+      "audio": "Cavi virtuali, dispositivi e configurazione dell'app di chiamata.",
+      "test": "Verifica che entrambe le direzioni funzionino.",
+      "transcription": "Testo dal vivo della chiamata.",
+      "ai": "Il modello che traduce i messaggi scritti e propone le risposte.",
+      "voice": "Le voci (maschili) della traduzione dal vivo e dei messaggi scritti.",
+      "suggestions": "Risposte proposte dall'IA mentre parli.",
+      "troubleshoot": "Controllo audio automatico e guide passo passo."
+    },
+    "general": {
+      "languages": "Lingue",
+      "you": "Tu parli",
+      "them": "L'altra persona parla",
+      "languagesHint": "La tua voce viene tradotta nella sua lingua e la sua nella tua.",
+      "key": "Chiave API OpenAI",
+      "keySaved": "Salvata: ●●●●{{last4}}",
+      "keyMissing": "Nessuna chiave salvata",
+      "keyReplace": "Sostituisci",
+      "keyHint": "Serve per traduzione, trascrizione e voce (e per l'IA se usi il modello OpenAI)."
+    },
+    "audio": {
+      "liveNote": "Mentre questa sezione è aperta l'audio della chiamata è in pausa: riparte con i dispositivi scelti appena passi a un'altra sezione.",
+      "cables": "VB-CABLE A · B",
+      "devices": "Dispositivi",
+      "callApp": "App di chiamata (Meet, Teams, Zoom)",
+      "showGuide": "Mostra la guida",
+      "hideGuide": "Nascondi la guida"
+    },
+    "voice": {
+      "translate": "Voce della traduzione dal vivo",
+      "translateHint": "Con questa voce l'app pronuncia la traduzione, in entrambe le direzioni. Vale dal prossimo Avvio.",
+      "typed": "Voce dei messaggi scritti e dei suggerimenti",
+      "recommended": "consigliata"
+    }
+  }
+}

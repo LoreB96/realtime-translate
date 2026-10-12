@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // vi.hoisted lets us define mock state above the hoisted vi.mock() factories
 // so the factories can capture references without TDZ errors.
@@ -40,7 +40,7 @@ vi.mock('electron-updater', () => ({
   },
 }));
 
-import { setupAutoUpdate } from '@main/updater';
+import { setupAutoUpdate, AUTO_UPDATE_ENV } from '@main/updater';
 
 describe('setupAutoUpdate', () => {
   beforeEach(() => {
@@ -49,6 +49,33 @@ describe('setupAutoUpdate', () => {
     mocks.quitAndInstallMock.mockClear();
     mocks.state.autoDownload = false;
     mocks.state.autoInstallOnAppQuit = false;
+    process.env[AUTO_UPDATE_ENV] = '1';
+    delete process.env.PORTABLE_EXECUTABLE_FILE;
+  });
+
+  afterEach(() => {
+    delete process.env[AUTO_UPDATE_ENV];
+    delete process.env.PORTABLE_EXECUTABLE_FILE;
+  });
+
+  it('is a no-op by default so a local build is never overwritten', async () => {
+    delete process.env[AUTO_UPDATE_ENV];
+    const handle = setupAutoUpdate({ onAvailable: () => undefined, onDownloaded: () => undefined });
+    await handle.checkNow();
+    handle.quitAndInstall();
+    expect(mocks.onMock).not.toHaveBeenCalled();
+    expect(mocks.checkForUpdatesMock).not.toHaveBeenCalled();
+    expect(mocks.quitAndInstallMock).not.toHaveBeenCalled();
+    expect(mocks.state.autoDownload).toBe(false);
+    expect(mocks.state.autoInstallOnAppQuit).toBe(false);
+  });
+
+  it('is a no-op in the portable exe even when opted in', async () => {
+    process.env.PORTABLE_EXECUTABLE_FILE = 'C:\\tmp\\Realtime Translate 0.5.0-m5.exe';
+    const handle = setupAutoUpdate({ onAvailable: () => undefined, onDownloaded: () => undefined });
+    await handle.checkNow();
+    expect(mocks.onMock).not.toHaveBeenCalled();
+    expect(mocks.checkForUpdatesMock).not.toHaveBeenCalled();
   });
 
   it('registers update-available, update-downloaded, error listeners', () => {
@@ -108,10 +135,19 @@ describe('setupAutoUpdate in dev mode', () => {
   it('returns no-op handle when app is not packaged', async () => {
     vi.resetModules();
     vi.doMock('electron', () => ({ app: { isPackaged: false } }));
-    const { setupAutoUpdate: setupDev } = await import('@main/updater');
-    const handle = setupDev({ onAvailable: () => undefined, onDownloaded: () => undefined });
-    await handle.checkNow(); // no-op, doesn't throw
-    handle.quitAndInstall(); // no-op
-    expect(true).toBe(true); // assertion: didn't throw
+    // Opted in, so only the isPackaged gate can make this a no-op.
+    process.env.REALTIME_TRANSLATE_AUTO_UPDATE = '1';
+    try {
+      mocks.onMock.mockClear();
+      mocks.checkForUpdatesMock.mockClear();
+      const { setupAutoUpdate: setupDev } = await import('@main/updater');
+      const handle = setupDev({ onAvailable: () => undefined, onDownloaded: () => undefined });
+      await handle.checkNow(); // no-op, doesn't throw
+      handle.quitAndInstall(); // no-op
+      expect(mocks.onMock).not.toHaveBeenCalled();
+      expect(mocks.checkForUpdatesMock).not.toHaveBeenCalled();
+    } finally {
+      delete process.env.REALTIME_TRANSLATE_AUTO_UPDATE;
+    }
   });
 });

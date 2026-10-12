@@ -1,7 +1,8 @@
 import type { SessionState } from '../../../../shared/types';
+import { TRANSLATE_USD_PER_MIN } from '../../../../shared/usage';
 
 /** OpenAI realtime translate billing — USD per session-minute. */
-export const RATE_PER_SESSION_MIN = 0.034;
+export const RATE_PER_SESSION_MIN = TRANSLATE_USD_PER_MIN;
 
 export function computeCost(stateA: SessionState, stateB: SessionState, nowMs: number): number {
   let totalMinutes = 0;
