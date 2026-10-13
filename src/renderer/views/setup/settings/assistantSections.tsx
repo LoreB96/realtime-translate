@@ -16,7 +16,6 @@ import {
   REASONING_EFFORTS,
   STT_ENGINES,
   STT_OPENAI_MODELS,
-  MALE_TRANSLATE_VOICES,
   MALE_TTS_VOICES,
   isLoopbackHost,
   isOpenAiHost,
@@ -602,26 +601,6 @@ export function VoiceSection(): JSX.Element | null {
     <>
       <SaveFailed show={saveFailed} />
       <section className="trouble-section">
-        <div className="assist-field">
-          <label className="setup-field-label" htmlFor="assist-translate-voice">
-            {t('settings.voice.translate')}
-          </label>
-          <select
-            id="assist-translate-voice"
-            className="setup-input assist-select"
-            value={prefs.translateVoice}
-            onChange={(e): void => {
-              void save({ translateVoice: e.target.value });
-            }}
-          >
-            {withCurrent(MALE_TRANSLATE_VOICES, prefs.translateVoice).map((v) => (
-              <option key={v} value={v}>
-                {label(v)}
-              </option>
-            ))}
-          </select>
-          <div className="setup-field-hint">{t('settings.voice.translateHint')}</div>
-        </div>
         <div className="assist-field">
           <label className="setup-field-label" htmlFor="assist-voice">
             {t('settings.voice.typed')}

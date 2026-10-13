@@ -27,8 +27,6 @@ export interface SessionManagerConfig {
   logger?: Logger;
   /** M6: request input transcription on both translate sessions with this model. */
   inputTranscriptionModel?: string;
-  /** Voice of the translated speech (both directions); best effort, see OpenAISession. */
-  voice?: string;
   /** M6: a direction's session rejected the input-transcription request (once per session). */
   onInputTranscriptionRejected?: (direction: Direction) => void;
 }
@@ -172,7 +170,6 @@ export class SessionManager {
       ...(this.cfg.inputTranscriptionModel
         ? { inputTranscriptionModel: this.cfg.inputTranscriptionModel }
         : {}),
-      ...(this.cfg.voice ? { voice: this.cfg.voice } : {}),
     });
     const pipeline = new AudioPipeline({
       streamId: direction,

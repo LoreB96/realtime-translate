@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { OpenAISession, type SessionEvents, type WebSocketLike, type WebSocketFactory } from '@main/translate/openaiSession';
+import { OpenAISession, type SessionEvents, type WebSocketLike, type WebSocketFactory, MAX_PENDING_AUDIO } from '@main/translate/openaiSession';
 
 class FakeWebSocket implements WebSocketLike {
   static instances: FakeWebSocket[] = [];
@@ -554,22 +554,21 @@ describe('OpenAISession', () => {
       wsFactory: fakeFactory,
     });
     session.start();
-    // Push 205 chunks before open. Cap is 200.
-    for (let i = 0; i < 205; i++) {
+    // Push 5 chunks past the cap before open (only a >60 s outage gets here).
+    const n = MAX_PENDING_AUDIO + 5;
+    for (let i = 0; i < n; i++) {
       session.appendAudio(`chunk-${i}`);
     }
     const ws = FakeWebSocket.instances[0]!;
     ws.simulateOpen();
-    // session.update + 200 buffered chunks (oldest 5 dropped).
-    expect(ws.sent).toHaveLength(1 + 200);
-    // First buffered chunk should be chunk-5 (chunk-0..chunk-4 dropped).
+    // session.update + MAX_PENDING_AUDIO buffered chunks (oldest 5 dropped).
+    expect(ws.sent).toHaveLength(1 + MAX_PENDING_AUDIO);
     expect(JSON.parse(ws.sent[1]!).audio).toBe('chunk-5');
-    expect(JSON.parse(ws.sent[200]!).audio).toBe('chunk-204');
+    expect(JSON.parse(ws.sent[MAX_PENDING_AUDIO]!).audio).toBe(`chunk-${n - 1}`);
   });
 
-  it('reconnect discards stale pending audio (live > stale for real-time translation)', () => {
-    // Replaying buffered audio on reconnect shifts OpenAI's input pipeline
-    // permanently behind real-time, compounding latency. Drop instead.
+  it('reconnect sends the audio captured during the gap (nothing goes untranslated)', () => {
+    // Every word must be translated; playback catches up the delay by speeding up.
     vi.useFakeTimers();
     try {
       const session = new OpenAISession({
@@ -596,9 +595,11 @@ describe('OpenAISession', () => {
       const ws2 = FakeWebSocket.instances[1]!;
       ws2.simulateOpen();
 
-      // ws2 should have ONLY session.update — stale audio is discarded.
-      expect(ws2.sent).toHaveLength(1);
+      // ws2: session.update, then the 50 chunks captured meanwhile, in order.
+      expect(ws2.sent).toHaveLength(51);
       expect(JSON.parse(ws2.sent[0]!).type).toBe('session.update');
+      expect(JSON.parse(ws2.sent[1]!).audio).toBe('stale-0');
+      expect(JSON.parse(ws2.sent[50]!).audio).toBe('stale-49');
     } finally {
       vi.useRealTimers();
     }
@@ -611,7 +612,7 @@ describe('OpenAISession', () => {
       wsFactory: fakeFactory, logger,
     });
     session.start();
-    for (let i = 0; i < 205; i++) session.appendAudio(`chunk-${i}`);
+    for (let i = 0; i < MAX_PENDING_AUDIO + 5; i++) session.appendAudio(`chunk-${i}`);
     expect(logger.warn).toHaveBeenCalledTimes(1);
     expect(logger.warn).toHaveBeenCalledWith('pending_audio_overflow');
   });

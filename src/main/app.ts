@@ -1443,7 +1443,6 @@ app.whenReady().then(async () => {
             health.reportFailure(DIRECTION_ROLES[direction][side === 'input' ? 0 : 1]!, message);
           },
           ...(inputTranscriptionModel ? { inputTranscriptionModel } : {}),
-          voice: assistant.prefs().translateVoice,
           onInputTranscriptionRejected: (d) => assistant.onInputTranscriptionRejected(d),
           logger,
         });

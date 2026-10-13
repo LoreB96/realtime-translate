@@ -576,7 +576,7 @@
       "test": "Check that both directions work.",
       "transcription": "Live text of the call.",
       "ai": "The model that translates typed messages and suggests replies.",
-      "voice": "The (male) voices of the live translation and of typed messages.",
+      "voice": "The (male) voice of typed messages and suggestions.",
       "suggestions": "Replies the AI suggests while you talk.",
       "troubleshoot": "Automatic audio check and step-by-step guides."
     },
@@ -600,8 +600,6 @@
       "hideGuide": "Hide the guide"
     },
     "voice": {
-      "translate": "Live translation voice",
-      "translateHint": "The voice that speaks the translation, in both directions. Applies from the next Start.",
       "typed": "Voice for typed messages and suggestions",
       "recommended": "recommended"
     }

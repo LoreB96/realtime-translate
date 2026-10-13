@@ -115,7 +115,6 @@ export interface AssistantPrefs {
   translateTheirSpeech: boolean; // default true
   llm: { preset: LlmPreset; baseUrl: string; model: string; reasoningEffort: ReasoningEffort };
   ttsVoice: string; // default 'cedar'
-  translateVoice: string; // default 'cedar' (voice of the live translation)
   ttsModel: string; // default 'gpt-4o-mini-tts'
   ttsMonitor: boolean; // default false
   suggestionsEnabled: boolean; // default true
@@ -157,7 +156,6 @@ export const DEFAULT_ASSISTANT_PREFS: AssistantPrefs = {
   translateTheirSpeech: true,
   llm: { preset: 'openai', ...LLM_PRESETS.openai },
   ttsVoice: 'cedar',
-  translateVoice: 'cedar',
   ttsModel: 'gpt-4o-mini-tts',
   ttsMonitor: false,
   suggestionsEnabled: true,
@@ -200,11 +198,11 @@ export const TTS_VOICES = [
   'cedar',
 ] as const;
 /**
- * Male voices offered in Settings, best first. `cedar` is OpenAI's recommended
- * highest-quality voice. Realtime (translation) has no onyx/fable.
+ * Male voices offered for typed speech, best first (`cedar` is OpenAI's recommended
+ * highest-quality voice). The live translation voice cannot be chosen: the translate
+ * endpoint rejects `audio.output.voice` (unknown_parameter, seen 2026-10-12).
  */
 export const MALE_TTS_VOICES = ['cedar', 'ash', 'ballad', 'echo', 'verse', 'onyx', 'fable'] as const;
-export const MALE_TRANSLATE_VOICES = ['cedar', 'ash', 'ballad', 'echo', 'verse'] as const;
 export const MAX_SPEAK_CHARS = 2000;
 export const MAX_TTS_INPUT_CHARS = 4096;
 export const MAX_MODEL_CHARS = 100;
@@ -266,7 +264,6 @@ const FLAT_VALIDATORS: { [K in FlatKey]: (v: unknown) => v is AssistantPrefs[K] 
   translateInputTranscript: isBool,
   translateTheirSpeech: isBool,
   ttsVoice: isTtsVoice,
-  translateVoice: isTtsVoice,
   ttsModel: isRequiredModel,
   ttsMonitor: isBool,
   suggestionsEnabled: isBool,

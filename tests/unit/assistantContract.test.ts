@@ -41,7 +41,6 @@ describe('assistant defaults', () => {
         reasoningEffort: 'minimal',
       },
       ttsVoice: 'cedar',
-      translateVoice: 'cedar',
       ttsModel: 'gpt-4o-mini-tts',
       ttsMonitor: false,
       suggestionsEnabled: true,

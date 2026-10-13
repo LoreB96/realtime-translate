@@ -576,7 +576,7 @@
       "test": "Verifique se as duas direções funcionam.",
       "transcription": "Texto ao vivo da chamada.",
       "ai": "O modelo que traduz as mensagens digitadas e sugere respostas.",
-      "voice": "As vozes (masculinas) da tradução ao vivo e das mensagens digitadas.",
+      "voice": "A voz (masculina) das mensagens digitadas e sugestões.",
       "suggestions": "Respostas que a IA sugere enquanto você fala.",
       "troubleshoot": "Verificação automática de áudio e guias passo a passo."
     },
@@ -600,8 +600,6 @@
       "hideGuide": "Ocultar o guia"
     },
     "voice": {
-      "translate": "Voz da tradução ao vivo",
-      "translateHint": "A voz que fala a tradução, nas duas direções. Vale a partir do próximo Iniciar.",
       "typed": "Voz das mensagens digitadas e sugestões",
       "recommended": "recomendada"
     }

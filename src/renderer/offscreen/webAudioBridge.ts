@@ -1,3 +1,5 @@
+import { catchupTempo } from '@shared/util/playbackPacing';
+import { TimeStretcher } from '@shared/util/timeStretch';
 import { float32ToPcm16Base64, pcm16Base64ToFloat32 } from '@shared/util/pcmCodec';
 import { FrameBatcher, LevelMeter, SilenceGate, type AudioLevel } from '@shared/util/audioAnalysis';
 import { Resampler } from '@shared/util/resampler';
@@ -42,16 +44,17 @@ const MODEL_SAMPLE_RATE = 24000;
 /** How long a suspended context may stay non-running (after resume()) before we report it. */
 const SUSPEND_GRACE_MS = 1000;
 /**
- * Playback backlog control. Translated speech often runs longer than the source and
- * arrives in bursts, so a backlog of a few seconds is normal: above CATCHUP_BACKLOG_S new
- * chunks play slightly faster (barely audible) until it drains; only a backlog above
- * MAX_PLAYBACK_BACKLOG_S (stalled device, long suspension) drops the queue.
+ * Idle time after the last chunk before the time-stretcher releases what it still holds
+ * (its last ~40 ms window). Short enough that the end of a sentence is not delayed.
  */
-const CATCHUP_BACKLOG_S = 1;
-const CATCHUP_RATE = 1.06;
-const MAX_PLAYBACK_BACKLOG_S = 6;
-/** Zeros sent after the gate closes so the model flushes the end of an utterance. */
-const GATE_TAIL_MS = 1500;
+const STRETCH_FLUSH_MS = 120;
+/**
+ * Zeros sent after the gate closes. The translation model runs a few seconds behind the
+ * speaker and only finishes the last sentences while audio keeps arriving: with a short
+ * tail the end of a long turn stayed untranslated (text and voice stopped mid-sentence)
+ * until someone spoke again. Billing is per session-minute, so the tail costs nothing.
+ */
+const GATE_TAIL_MS = 8000;
 /** Default test-tone level: clearly audible on a meter, not painful on a headset. */
 const DEFAULT_TONE_DB = -12;
 const TONE_FADE_S = 0.02;
@@ -253,21 +256,18 @@ export async function startCapture(
 }
 
 /**
- * Opens a 24 kHz playback stream on an output device. `opts` (spec §7.2) overrides the
- * backlog cap and disables catch-up; the defaults keep the translation behaviour
- * (MAX_PLAYBACK_BACKLOG_S, CATCHUP_RATE). TTS uses a long backlog and no catch-up because
- * its audio arrives faster than real time.
+ * Opens a 24 kHz playback stream on an output device. Audio is never dropped: a growing
+ * queue is played faster with a pitch-preserving time-stretch (see playbackPacing).
+ * `opts.catchup === false` (typed speech, which arrives faster than real time and is
+ * queued whole) plays everything at normal speed. `opts.maxBacklogS` is ignored: nothing
+ * is ever discarded.
  */
 export async function startPlayback(
   outputDeviceId: string,
   hooks?: StreamHooks,
   opts?: PlaybackOptions,
 ): Promise<PlaybackHandle> {
-  const maxBacklogS =
-    opts?.maxBacklogS !== undefined && Number.isFinite(opts.maxBacklogS) && opts.maxBacklogS > 0
-      ? opts.maxBacklogS
-      : MAX_PLAYBACK_BACKLOG_S;
-  const catchupRate = opts?.catchup === false ? 1 : CATCHUP_RATE;
+  const catchup = opts?.catchup !== false;
   const ctx = new AudioContext({ sampleRate: MODEL_SAMPLE_RATE });
   let dispose: (() => void) | undefined;
   try {
@@ -284,13 +284,24 @@ export async function startPlayback(
     throw err;
   }
 
-  // Write head: tracks where the next chunk should start so consecutive chunks
-  // play sequentially instead of overlapping. Reset when ctx.currentTime catches up
-  // (e.g., after a silence gap).
+  // Write head: where the next chunk starts, so consecutive chunks play back to back.
+  // Reset when ctx.currentTime catches up (e.g. after a silence gap).
   let writeHead = 0;
-  // Scheduled sources, so an over-long backlog can be cancelled.
-  const scheduled = new Set<AudioBufferSourceNode>();
-  let drops = 0;
+  const stretcher = catchup ? new TimeStretcher({ sampleRate: MODEL_SAMPLE_RATE }) : undefined;
+  let flushTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const schedule = (samples: Float32Array): void => {
+    if (samples.length === 0 || ctx.state === 'closed') return;
+    const buffer = ctx.createBuffer(1, samples.length, MODEL_SAMPLE_RATE);
+    buffer.copyToChannel(samples as Float32Array<ArrayBuffer>, 0);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(ctx.destination);
+    src.onended = () => src.disconnect();
+    const startAt = Math.max(ctx.currentTime, writeHead);
+    src.start(startAt);
+    writeHead = startAt + samples.length / MODEL_SAMPLE_RATE;
+  };
 
   return {
     push(base64Pcm16: string): void {
@@ -298,43 +309,21 @@ export async function startPlayback(
       if (ctx.state !== 'running') void ctx.resume().catch(() => undefined);
       const samples = pcm16Base64ToFloat32(base64Pcm16);
       if (samples.length === 0) return;
-      // Latency guard: if more than MAX_PLAYBACK_BACKLOG_S is queued (stalled device,
-      // suspended context), drop the stale queue so the listener hears current speech
-      // instead of drifting further behind. Smaller backlogs catch up smoothly below.
-      if (writeHead - ctx.currentTime > maxBacklogS) {
-        for (const s of scheduled) {
-          try {
-            s.stop();
-          } catch {
-            /* not started yet / already stopped */
-          }
-        }
-        scheduled.clear();
-        writeHead = ctx.currentTime;
-        drops += 1;
-        // Counts only — never audio content.
-        // eslint-disable-next-line no-console
-        console.warn(`[offscreen] playback backlog over ${maxBacklogS} s dropped (drops=${drops})`);
+      if (!stretcher) {
+        schedule(samples);
+        return;
       }
-      const rate = writeHead - ctx.currentTime > CATCHUP_BACKLOG_S ? catchupRate : 1;
-      const buffer = ctx.createBuffer(1, samples.length, MODEL_SAMPLE_RATE);
-      buffer.copyToChannel(samples as Float32Array<ArrayBuffer>, 0);
-      const src = ctx.createBufferSource();
-      src.buffer = buffer;
-      src.playbackRate.value = rate;
-      src.connect(ctx.destination);
-      src.onended = () => {
-        scheduled.delete(src);
-        src.disconnect();
-      };
-      const startAt = Math.max(ctx.currentTime, writeHead);
-      src.start(startAt);
-      scheduled.add(src);
-      writeHead = startAt + samples.length / MODEL_SAMPLE_RATE / rate;
+      const backlogS = Math.max(0, writeHead - ctx.currentTime);
+      schedule(stretcher.process(samples, catchupTempo(backlogS)));
+      if (flushTimer !== undefined) clearTimeout(flushTimer);
+      flushTimer = setTimeout(() => {
+        flushTimer = undefined;
+        schedule(stretcher.flush());
+      }, STRETCH_FLUSH_MS);
     },
     stop(): void {
+      if (flushTimer !== undefined) clearTimeout(flushTimer);
       dispose?.();
-      scheduled.clear();
       void ctx.close();
     },
   };

@@ -49,8 +49,12 @@ export interface OpenAISessionConfig {
 
 const ENDPOINT = 'wss://api.openai.com/v1/realtime/translations?model=gpt-realtime-translate';
 const DEFAULT_BACKOFF: BackoffConfig = { baseMs: 1000, maxMs: 30000, maxAttempts: 5 };
-/** Cap on pre-connect audio buffer (~10s @ 50ms framing). */
-const MAX_PENDING_AUDIO = 200;
+/**
+ * Cap on audio buffered while the socket is not open (~60 s @ 50 ms framing). Everything
+ * buffered is sent once it opens — also after a reconnect — so nothing said during a
+ * network hiccup goes untranslated; playback then catches up faster (see playbackPacing).
+ */
+export const MAX_PENDING_AUDIO = 1200;
 
 export class OpenAISession {
   private ws?: WebSocketLike;
@@ -209,17 +213,12 @@ export class OpenAISession {
       });
       this.voiceActive = true;
     }
-    if (!this.hasOpenedOnce) {
-      // First open after start(): flush audio captured between start() and WS open.
-      // This is the legitimate startup window — typically 1-3s of buffered audio.
-      for (const chunk of this.pendingAudio) {
-        this.sendRaw({ type: 'session.input_audio_buffer.append', audio: chunk });
-      }
-      this.hasOpenedOnce = true;
+    // Flush audio captured while the socket was not open: the startup window after start()
+    // and any reconnect gap. Never discarded — the user wants every word translated.
+    for (const chunk of this.pendingAudio) {
+      this.sendRaw({ type: 'session.input_audio_buffer.append', audio: chunk });
     }
-    // On reconnect (hasOpenedOnce was already true), pendingAudio is intentionally
-    // discarded. Replaying it would shift OpenAI's input pipeline permanently behind
-    // real-time — for translation, live audio is more valuable than stale audio.
+    this.hasOpenedOnce = true;
     this.pendingAudio = [];
     this.hasLoggedOverflow = false;
     this.cfg.events.onState({ kind: 'active', sinceMs: Date.now() });
